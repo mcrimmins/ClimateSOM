@@ -14,21 +14,26 @@ library(reshape2)
 library(kohonen)
 library(ggplot2)
 library(dplyr)
+library(rasterVis)
 
 
-# # # download data
-## lat.southnorth=c(20,50), lon.westeast=c(210,265) for CoL analysis
-# lat.southnorth=c(20,50), lon.westeast=c(235,265) for NAMS
- # wx.extent1 <- NCEP.gather(variable='hgt', level=500,
- #                           months.minmax=c(7,9), years.minmax=c(1979,2017),
- #                           lat.southnorth=c(20,50), lon.westeast=c(235,265),
- #                           reanalysis2 = TRUE, return.units = TRUE, status.bar = FALSE)
+# # download data
+# lat.southnorth=c(20,50), lon.westeast=c(210,265) for CoL analysis
+#lat.southnorth=c(20,50), lon.westeast=c(235,265) for NAMS
+lat1<-20
+lat2<-50
+lon1<-235
+lon2<-265
+wx.extent1 <- NCEP.gather(variable='hgt', level=500,
+                          months.minmax=c(6,9), years.minmax=c(1979,2019),
+                          lat.southnorth=c(lat1,lat2), lon.westeast=c(lon1,lon2),
+                          reanalysis2 = TRUE, return.units = TRUE, status.bar = FALSE)
 
 # load sample data
-load("~/RProjects/SOMs/JAS500mb_1979-2017.RData")
+#load("~/RProjects/SOMs/JAS500mb_1979-2017.RData")
 
 # map data
-NCEP.vis.area(wx.data=wx.extent1, layer='2017-09-20 00', show.pts=TRUE,
+NCEP.vis.area(wx.data=wx.extent1, layer='2019-09-20 00', show.pts=TRUE,
               draw.contours=TRUE, cols=terrain.colors(64), transparency=.6,
               title.args=list(main="Example: select layer by datetime"),
               interp.loess.args=list(span=0.5))
@@ -53,8 +58,8 @@ wx.wide<-dcast(wx.df, formula = datetime~latitude+longitude, value.var = "GH500"
 
 
 # kohonen SOM
-nrows=3
-ncols=5
+nrows=4
+ncols=6
 som.gh500 <- som(as.matrix(wx.wide[,2:ncol(wx.wide)]), grid = somgrid(ncols, nrows, "rectangular"))
 codebook<-as.data.frame(som.gh500$codes)
 code_grid<-as.data.frame(som.gh500$grid$pts)
@@ -105,7 +110,8 @@ p + geom_polygon( data=world, aes(x=X, y=Y, group = PID),colour="black", fill=NA
   #scale_color_continuous(low="blue", high = "red")+ 
   coord_map(xlim = xlim,ylim = ylim)+
   facet_wrap(~codes, nrow = nrows, ncol=ncols)+theme_bw()+
-  labs(x="Lon", y="Lat")
+  labs(x="Lon", y="Lat")+
+  ggtitle("Sept 500mb GH Pattern Classification (NCEP R2, 1979-2018)")
 
 # summary plots -- appears to plot opposite up/down from SOM plot
 counts <- plot(som.gh500, type="counts", shape = "straight", labels=counts)
@@ -127,7 +133,7 @@ somTime<-left_join(somTime, code_grid)
 # plot map units
 ggplot(somTime, aes(doy, year)) + 
   geom_tile(aes(fill = mapUnit), colour = "grey") + 
-  geom_text(aes(label = codes), size=1.25)+
+  geom_text(aes(label = codes), size=1.50)+
   scale_fill_gradient2(low = "red", mid = "green",
                        high = "blue", midpoint = 7, space = "Lab",
                        na.value = "grey50", guide = "colourbar")
@@ -142,47 +148,100 @@ ggplot(somTime, aes(doy, year)) +
 # plot precip with local CPC precip
 
 
-# plot precip with rnoaa cpc_prcp
-library(rnoaa)
-
-tmp<-cpc_prcp(date = somTime$date[i])
-tmp$lon<-tmp$lon-180
-
-for(i in 1:4){
-  tmp<-cpc_prcp(date = somTime$date[i])
-  if (i==1){
-    tmp2 <- tmp
-  }else{
-    tmp2 <-bind_cols(tmp2,tmp[,3]) # brick or stack?
-  }
-}
-
-tmp<-cpc_prcp(date = "1958-07-16", us=FALSE)
-p <- ggplot(tmp, aes(x=lon, y=lat, fill=precip)) + theme_bw()
-p + geom_tile()+
-  ggtitle("cpc_prcp(date = '2016-07-16', us=FALSE)")
-
-p <- ggplot(tmp, aes(x=lon, y=lat)) + theme_bw()
-p + geom_raster(aes(fill=precip))
+# # plot precip with rnoaa cpc_prcp
+# library(rnoaa)
+# i=100
+# tmp<-cpc_prcp(date = somTime$date[i])
+# tmp$lon<-tmp$lon-180
+# 
+# for(i in 1:4){
+#   tmp<-cpc_prcp(date = somTime$date[i])
+#   if (i==1){
+#     tmp2 <- tmp
+#   }else{
+#     tmp2 <-bind_cols(tmp2,tmp[,3]) # brick or stack?
+#   }
+# }
+# 
+# tmp<-cpc_prcp(date = "2019-08-16", us=FALSE)
+# p <- ggplot(tmp, aes(x=lon, y=lat, fill=precip)) + theme_bw()
+# p + geom_tile()+
+#   ggtitle("cpc_prcp(date = '2019-08-16', us=FALSE)")
+# 
+# p <- ggplot(tmp, aes(x=lon, y=lat)) + theme_bw()
+# p + geom_raster(aes(fill=precip))
 
 # plot CPC precip from netcdf files
 library(ncdf4)
 library(raster)
 
 yr1<-1979
-yr2<-2017
+yr2<-2018
 
+allPrecip <- stack()
 for(i in yr1:yr2){
-  paste0(i)
   cpc.prcp.file <- paste0("/scratch/crimmins/cpc_global/ftp.cdc.noaa.gov/Datasets/cpc_global_precip/precip.",i,".nc")
   #"load" data into R via Raster package
   # cycle through each year, assigning each day to appropriate SOM unit
   prcp.tmp <- brick(cpc.prcp.file, varname="precip",  ncdf=TRUE)
-  plot(prcp.tmp[[1]])
+  #plot(prcp.tmp[[1]])
 
+  # grep out month(s) -- set months 
+  prcp.tmp <- raster::subset(prcp.tmp, grep('.09.', names(prcp.tmp), value = T, fixed = T)) # use pipe for more months .08.|.09.
+  
   # crop extent
-  # e <- extent(-100, -66.7, 24.1, 51.2)
-  # tminCrop <- crop(tmin, e)
-  
-  
+  e <- extent(lon1, lon2, lat1, lat2)
+  prcp.tmp <- crop(prcp.tmp, e)
+  # build stack
+  allPrecip <- stack( allPrecip , prcp.tmp)  
+  print(i)
 }
+
+# get composite means
+precipComposite<-stack()
+codePatterns<-stack()
+codebook.trim<-codebook.long[-c(1:(ncols*nrows)),]
+
+for(i in 1:nrow(code_grid)){
+  # build precip composite
+  temp<-overlay(subset(allPrecip, which(somTime$mapUnit==i)), fun=function(x){mean(x,na.rm=T)})
+  names(temp)<-paste0(code_grid$codes[i]," (n=",length(which(somTime$mapUnit==i)),")")
+  precipComposite<-stack(precipComposite,temp)
+  # build height pattern raster
+  codeTemp<-subset(codebook.trim, codes==code_grid$codes[i])
+  codeTemp<-rasterFromXYZ(codeTemp[,c(5,4,6)])
+  codePatterns<-stack(codePatterns,codeTemp)
+  print(i)
+}
+
+precipComposite[precipComposite == 0] <- NA
+precipComposite<-raster::rotate(precipComposite)
+names(codePatterns)<-seq(1,ncols*nrows,1)
+
+# mapping
+statesPoly <- map_data("state")
+worldPoly<-map_data("world")
+# create color scheme for precip
+#mycols <- rasterTheme(region=colorRampPalette(brewer.pal(9,'YlGnBu'))(100))
+mycols <- rasterTheme(region=colorRampPalette(rev(brewer.pal(9,'Spectral')))(100))
+cols.at <- seq(0, 15, 0.5)
+levs.at<-seq(5600,6000, 25)
+levelplot(precipComposite, margin=FALSE, layout=c(ncols,nrows),par.settings = mycols,
+          at=cols.at, main="Sept 500mb GH Pattern Classification and mean precip (NCEP R2, 1979-2019)")+
+          contourplot(codePatterns,at=levs.at,
+              lwd = 0.4,
+              labels = list(cex = 0.6),
+              label.style = 'align')
+  #layer(sp.polygons(statesPoly, col = 'gray40', lwd=0.3))
+
+# plot paths of days/transitions on grid for specified time periods
+somTime<-separate(data = somTime, col = codes, into = c("codeRow", "codeCol"), sep = "_", convert = TRUE)
+
+ggplot(somTime[somTime$date>="2017-08-01" & somTime$date<="2017-08-31",], aes(codeCol, codeRow))+
+  geom_path(aes(codeCol,codeRow, color=doy))+
+  scale_y_reverse(lim=c(nrows+1,0))+
+  scale_color_distiller(type = "seq", palette = "YlGnBu")+
+  xlim(0,ncols+1)+
+  theme_bw()
+
+# grab data from ESRL for near real time
