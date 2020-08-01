@@ -3,9 +3,15 @@
 
 library(raster)
 library(RStoolbox)
+library(lubridate)
 
 # set rasteroptions
 rasterOptions(progress = 'text')
+
+# functions
+leap_every_year <- function(x) {
+  ifelse(yday(x) > 59 & leap_year(x) == FALSE, yday(x) + 1, yday(x))
+}
 
 # load PRISM for SW Region
 prcp<- stack("/scratch/crimmins/PRISM/processed/SWUS_1981_2019_PRISM_daily_prcp.grd") 
@@ -27,7 +33,7 @@ startYr<-1981
   dates$day<-as.numeric(format(dates$date, "%d"))
   dates$year<-as.numeric(format(dates$date, "%Y"))
   dates$doy<-as.numeric(format(dates$date, "%j"))
-  #dates$doy_ly<-leap_every_year(dates$date) # this day of year without leap day shifts
+  dates$doy_ly<-leap_every_year(dates$date) # this day of year without leap day shifts
 
 # subset layers to months of interest
 #mos<-c(6,7,8,9)
@@ -43,8 +49,6 @@ mos<-c(7,8,9)
   perc.rank<-function(x) trunc(rank(x,ties.method = "average"))/length(x)
   percRankPrecip <- calc(subLayers, fun=perc.rank)
   percRankPrecip <-(percRankPrecip[[nlayers(percRankPrecip)]])*100
-  
-  
   
   writeRaster(percRankPrecip, filename = "/scratch/crimmins/PRISM/processed/JASperRank_SWUS_1981_2019_PRISM_daily_prcp.grd",
               overwrite=TRUE)
@@ -78,4 +82,43 @@ mos<-c(7,8,9)
             main=paste0(year," Precip  - PRISM-daily 1981-2019"))+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
   
+  
+  # pentad median
+  # # calculate pentads
+  #  pentadMean<-function(x){
+  #    movingFun(x, 5, mean, type = "around", na.rm = TRUE)
+  #  }
+    # pentadMedian<-function(x){
+    #   movingFun(x, 5, median, type = "around", na.rm = TRUE)
+    # }
+
+    # beginCluster(6)
+    #   prcp <- clusterR(prcp, calc, args=list(fun=pentadMedian))
+    # endCluster()
+  
+    beginCluster(6)
+       dailyClimo <- raster::clusterR(subLayers, stackApply,
+                                          args=list(indices = subDates$doy_ly,
+                                                    fun = mean, na.rm = TRUE))
+    endCluster()
+    doyDates<-seq.Date(as.Date("2016-07-01"),as.Date("2016-09-30"),1)
+    names(dailyClimo)<-format(doyDates, "%b-%d")
+    dailyClimo[dailyClimo == 0] <- NA  
+    
+    library(rasterVis)
+    # map layers
+    states <- getData('GADM', country='United States', level=1)
+    az<-subset(states, NAME_1=="Arizona")
+    nm<-subset(states, NAME_1=="New Mexico")
+    aznm<-subset(states, NAME_1=="Arizona" | NAME_1=="New Mexico")
+    
+    at<-c(seq(0,20,1))
+    #mapTheme <- rasterTheme(region=rev(terrain_hcl(12)))
+    mapTheme <- rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
+    pPrecip<-levelplot(dailyClimo[[which(doyDates>="2016-07-01" & doyDates<="2016-09-30")]],
+                       contour=FALSE, margin=FALSE, par.settings=mapTheme, at=at,
+                       main="Daily Median Precipitation PRISM, 1981-2019")+
+      layer(sp.polygons(aznm, col = 'gray40', lwd=1))
+    
+    
   

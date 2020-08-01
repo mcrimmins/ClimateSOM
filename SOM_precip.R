@@ -121,7 +121,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
 #                         #grid = somgrid(ncols[i], nrows[i], "rectangular"),
 #                         grid = somgrid(ncols[i], nrows[i], topo="rectangular", neighbourhood.fct = c("gaussian")),
 #                         #alpha = c(0.05, 0.001),
-#                         #radius = c(5,1),
+#                         radius = c(3,0.33),
 #                         mode= "pbatch",
 #                         cores = 7,
 #                         rlen = 500,
@@ -137,7 +137,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
 # diagnostics<-cbind.data.frame(nrows,ncols,qe,te)
 # plot(diagnostics$qe, diagnostics$te, xlim=c())
 # text(diagnostics$qe, diagnostics$te, labels=paste0(diagnostics$nrows,"-",diagnostics$ncols))
-# save(diagnostics, file = "~/RProjects/SOMs/monsoonPrecip/diagnostics.RData")
+# save(diagnostics, file = "~/RProjects/SOMs/monsoonPrecip/diagnostics2.RData")
 ######
 
 # kohonen SOM
@@ -150,12 +150,12 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
                           #grid = somgrid(ncols, nrows, "rectangular"),
                           grid = somgrid(ncols, nrows, topo="rectangular", neighbourhood.fct = c("gaussian")),
                           #alpha = c(0.05, 0.001), # for online
-                          radius = c(3,1),
+                          radius = c(3,0.33), # c(3,0.33)
                           mode= "pbatch", # "pbatch" or "online"
                           #mode= "online", # "pbatch" or "online"
                           #maxNA.fraction = 0.5,
                           cores = 7,
-                          rlen = 500, 
+                          rlen = 1000, 
                           dist.fcts = "sumofsquares")
   proc.time() - ptm
   ## quantization error:
@@ -163,10 +163,50 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   ## topographical error measures:
   source("topo.error.R")
   topo.error(som.gh500, "nodedist")
+  ##
+  
+  ##### 
+  # CP2 - 2 phase SOM training
+  nrows=4
+  ncols=5
+  ptm <- proc.time()
+  #som.gh500 <- som(as.matrix(df.wide[,2:ncol(df.wide)]), grid = somgrid(ncols, nrows, "rectangular"))
+  set.seed(999) #keep set seed 16, 11 upper left/wet, 9,6 upper right dry/UL wet, 8 UL Wet/LR dry, 7 LR Wet/LL Dry, 5 LR wet/LL dry, 4/100 UL wet/UR dry, 101 wet UR/dry LL, 102/104 dry UL/wet UR, 103 UL Wet/LR Dry
+  som.gh500 <- supersom(as.matrix(df.wide[idx,2:ncol(df.wide)]),
+                        #grid = somgrid(ncols, nrows, "rectangular"),
+                        grid = somgrid(ncols, nrows, topo="rectangular", neighbourhood.fct = c("gaussian")),
+                        #alpha = c(0.05, 0.001), # for online
+                        radius = c(4,1),
+                        mode= "pbatch", # "pbatch" or "online"
+                        #mode= "online", # "pbatch" or "online"
+                        #maxNA.fraction = 0.5,
+                        cores = 7,
+                        rlen = 5000,
+                        dist.fcts = "sumofsquares")
+  som.gh500.2 <- supersom(as.matrix(df.wide[idx,2:ncol(df.wide)]),
+                        #grid = somgrid(ncols, nrows, "rectangular"),
+                        grid = somgrid(ncols, nrows, topo="rectangular", neighbourhood.fct = c("gaussian")),
+                        #alpha = c(0.05, 0.001), # for online
+                        radius = c(3,0.33),
+                        mode= "pbatch", # "pbatch" or "online"
+                        #mode= "online", # "pbatch" or "online"
+                        #maxNA.fraction = 0.5,
+                        init= som.gh500$codes,
+                        cores = 7,
+                        rlen = 7000,
+                        dist.fcts = "sumofsquares")
+      ## quantization error:
+      mean(som.gh500.2$distances)
+      ## topographical error measures:
+      source("topo.error.R")
+      topo.error(som.gh500.2, "nodedist")
+  proc.time() - ptm
+  som.gh500<-som.gh500.2
+  #####
   
   # save SOM output
-  #save(som.gh500, file = "~/RProjects/SOMs/monsoonPrecip/AZwNM_PRISM_JAS_SOM4x5.RData")
-  #load("~/RProjects/SOMs/monsoonPrecip/AZwNM_PRISM_JAS_SOM4x5.RData")
+  #save(som.gh500, file = "~/RProjects/SOMs/monsoonPrecip/AZwNM_PRISM_JAS_SOM4x5_CP2.RData")
+  #load("~/RProjects/SOMs/monsoonPrecip/AZwNM_PRISM_JAS_SOM4x5_CP2.RData") #1- rad(4,1):rlen:5000, #2-rad(3,0.33):rlen:7000
   
   #topo.error(som.gh500, "bmu")
   codebook<-as.data.frame(som.gh500$codes)
@@ -230,7 +270,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   #mapTheme <- rasterTheme(region=rev(terrain_hcl(12)))
   mapTheme <- rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
   pPrecip<-levelplot(cbRaster, contour=FALSE, margin=FALSE, par.settings=mapTheme,layout=c(ncols,nrows), at=at,
-            main="Precip Patterns JAS 3x3 SOM - PRISM-daily 1981-2019")+
+            main="Precip Patterns JAS 4x5 SOM - PRISM-daily 1981-2019")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
     #layer(sp.polygons(us, col = 'gray40', lwd=1))+
     #layer(sp.polygons(mx, col = 'gray40', lwd=1))
@@ -243,6 +283,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   #somTime$kendall<-NA
   somTime$spearman<-NA
   somTime$pearson<-NA
+  somTime$rmse<-NA
   for(i in 1:nrow(somTime)){
      somTime$pearson[i]<-cor(values(cbRaster[[somTime$mapUnit[i]]]), values(subLayers[[i]]),
                               use = "na.or.complete", method="pearson")
@@ -250,12 +291,28 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
         use = "na.or.complete", method="spearman")
     # somTime$kendall[i]<-cor(values(cbRaster[[somTime$mapUnit[i]]]), values(subLayers[[i]]),
     #                          use = "na.or.complete", method="kendall")
+    somTime$rmse[i]<- sqrt(sum((values(subLayers[[i]])-values(cbRaster[[somTime$mapUnit[i]]]))^2, na.rm = TRUE)/length(values(subLayers[[i]])))
     print(i)
   }
   
   mean(somTime$spearman, na.rm=TRUE)
-  mean(somTime$pearson, na.rm=TRUE)
-    # i<-234
+  median(somTime$spearman, na.rm=TRUE)
+  
+  mean(somTime$rmse, na.rm=TRUE)
+  median(somTime$rmse, na.rm=TRUE)
+  #mean(somTime$pearson, na.rm=TRUE)
+  
+  # inter-node correlations
+  # library(corrplot)
+  # corrmtx<-cor(t(codebook[,3:ncol(codebook)]), method = "spearman")
+  # corrplot(corrmtx, type = "upper", 
+  #          tl.col = "black", tl.srt = 45)
+  
+  # sum of square errors
+  #i=4
+  #test<-sum((values(subLayers[[i]])-values(cbRaster[[somTime$mapUnit[i]]]))^2, na.rm = TRUE) 
+  
+  # i<-4
   # plot(values(cbRaster[[somTime$mapUnit[i]]]), values(subLayers[[i]]))
   # plot(stack(cbRaster[[somTime$mapUnit[i]]], subLayers[[i]]))
   #   plot(values(cbRaster[[somTime$mapUnit[i]]]), type="l")
@@ -274,7 +331,90 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   somTime$percZero<-(rowSums(df.wide[idx,2:ncol(df.wide)]==0)/(ncol(df.wide)-1))*100 # percent 0 precip  
   somTime$sumPrecip<-apply(df.wide[idx,2:ncol(df.wide)], 1, sum) # max value of day 
   
+  #####
+  # add in climate indices
+  load("~/RProjects/SOMs/monsoonPrecip/climInd.RData")
+  climInd<-climInd[,c("date","phase","amplitude","ONI")]
+    colnames(climInd)[1]<-"date.c"
+  somTime<-merge(somTime,climInd, by.x="date",by.y="date.c")
+   # ENSO phase
+  somTime$ENSO<-"Neutral"
+    somTime$ENSO<-ifelse(somTime$ONI <= -0.5, "La Nina", somTime$ENSO)   
+    somTime$ENSO<-ifelse(somTime$ONI >= 0.5, "El Nino", somTime$ENSO)   
+  #####  
   
+  # transition probabilities
+  library(gmodels)
+    transProb<-cbind.data.frame(somTime[,c(1,2,4:8)], c(somTime[2:nrow(somTime),8],NA))
+      colnames(transProb)[8]<-"day2code"
+    transProb$day2code[which(transProb$month==9 & transProb$day==30)]<-NA
+    crossStats<-CrossTable(transProb$codes,as.character(transProb$day2code), expected = TRUE)
+    # viz table https://murraylax.org/rtutorials/viscrosstabs.html
+    crossStats<-as.data.frame(table(transProb$codes,as.character(transProb$day2code)))
+    ggplot(crossStats, aes(x=Var1, y=Freq, fill=Var2)) + 
+      geom_col() +
+      #geom_bar(position="fill", stat="identity") +
+      guides(fill=guide_legend(title="Day 2"))+
+      xlab("Day 1")+
+      ylab("count")+
+      ggtitle("Transition counts")
+      #ylim(0,100)
+  # angle between transition
+    temp <- transProb %>% separate(codes, c("Y1","X1"), sep = "_", remove=FALSE)
+    temp <- temp %>% separate(day2code, c("Y2","X2"), sep = "_", remove=FALSE)
+    temp$Y1<-as.numeric(temp$Y1)*-1; temp$Y2<-as.numeric(temp$Y2)*-1;
+    temp$X1<-as.numeric(temp$X1); temp$X2<-as.numeric(temp$X2);
+    # arctan of coords
+    temp$delta_x = temp$X2 - temp$X1
+    temp$delta_y = temp$Y2 - temp$Y1
+    temp$angle = (atan2(temp$delta_y, temp$delta_x)*180)/(pi)
+    temp$angle = ifelse(temp$angle<0, 360+temp$angle, temp$angle)
+    temp<-subset(temp, abs(delta_x)<=1 & abs(delta_y)<=1)
+    temp<-subset(temp, !(abs(delta_x)==0 & abs(delta_y)==0))
+    temp$angle<-temp$angle-5
+    # ..count.. or ..ncount..
+    ggplot(temp, aes(x = angle)) +
+      geom_histogram(aes(y=..ncount../sum(..ncount..)),
+                    binwidth = 1, boundary = 5, fill = 'grey', color = 'black', 
+                     closed = "left") +
+      scale_x_continuous(breaks=seq(0, 270, by=90), limits = c(-5, 355), labels = NULL) +
+      coord_polar(start = -(90 * pi/180), direction=-1)+
+      scale_y_continuous(limits=c(0, 0.02), oob=squish, labels=NULL)+
+      facet_wrap(~codes)+
+      xlab(NULL)+
+      ylab(NULL)+
+      theme(axis.text.x = element_text(size = 8))+
+      ggtitle("Transition trajectory frequencies (relative proportions)")
+    
+    
+  #####    
+  # counts of nodes by day of year
+    countDOY<-somTime %>% group_by(month,day) %>% count(codes)
+      countDOY <- countDOY %>% group_by(month,day) %>% summarize(maxCount=max(n),
+                                                                 maxNode= codes[which.max(n)])
+    countDOY$date<-as.Date(paste0(countDOY$month,"-",countDOY$day,"-2016"), format="%m-%d-%Y")      
+    countDOY$wday<-wday(countDOY$date, label = T, week_start = 7)
+    countDOY$week<-epiweek(countDOY$date)
+    countDOY %>%
+      ggplot(aes(wday,-week, fill = maxCount)) +
+      geom_tile(colour = "white")  + 
+      geom_text(aes(label = maxNode), size = 3) +
+      theme(aspect.ratio = 1/2,
+            axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            panel.grid = element_blank(),
+            axis.ticks = element_blank(),
+            panel.background = element_blank(),
+            strip.background = element_blank(),
+            strip.text = element_text(face = "bold", size = 15),
+            panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+      scale_fill_gradient2(midpoint = 10) +
+      facet_wrap(~month, nrow = 3, ncol = 1, scales = "free") +
+      labs(title = "Most frequent nodes by day of year")
+    #####  
+    
+    
   # distribution of daily precip values by node
   ggplot(somTime, aes(as.factor(somTime$codes), percExtent))+
     geom_boxplot(varwidth = TRUE)+
@@ -291,14 +431,23 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   ggplot(somTime, aes(as.factor(somTime$codes), percZero))+
     geom_boxplot(varwidth = TRUE)+
     ggtitle("Distribution of Percent Zero Extent Precip (mm) by nodes")  
+  ggplot(somTime, aes(as.factor(somTime$codes), rmse))+
+    geom_boxplot(varwidth = TRUE)+
+    ggtitle("Distribution of RMSE (mm) by nodes") 
   
   # plot 10 random maps from selected node to assess quality
   #at<-c(seq(0.01,45,1),60)
   mapTheme <- rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
   temp<-subLayers[[idx]]
-  levelplot(temp[[sample(which(somTime$codes=="1_1"),20)]], contour=FALSE,
+  pRand<-levelplot(temp[[sample(which(somTime$codes=="1_5"),10)]], contour=FALSE,
                      margin=FALSE, par.settings=mapTheme, 
                      main="Precip Patterns from 1_1 - PRISM-daily 1981-2019")+
+    layer(sp.polygons(aznm, col = 'gray40', lwd=1))
+  
+  # plot single day
+  levelplot(temp[[1]], contour=FALSE,
+            margin=FALSE, par.settings=mapTheme, 
+            main="Precip")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
   
   # maps on composites of days in nodes ####
@@ -308,21 +457,43 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
       # apply mask
       temp<-mask(perc, mask)
   # composites on raw precip
-  #temp<-subLayers[[idx]]
-  comp<-stackApply(temp, somTime$mapUnit, fun=IQR)
+  temp<-subLayers[[idx]]
+  comp<-stackApply(temp, somTime$mapUnit, fun=max)
     tempNames<-as.data.frame(names(comp))
     colnames(tempNames)<-"index"
     tempNames <- tempNames %>% separate(index, c(NA,"mapUnit"), sep = "_", remove=FALSE)
     comp<-subset(comp, order(as.numeric(tempNames$mapUnit)))
   names(comp)<-codeList   
+  comp[comp ==0] <- NA 
   # plot 
-  at<-c(seq(0,5,0.25),45)
+  at<-c(seq(0,50,2),200)
   mapTheme<-rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
-  pComp<-levelplot(comp, contour=FALSE, margin=FALSE, par.settings=mapTheme,layout=c(ncols,nrows),  
-                     main="Composite IQR Percentile JAS 4x5 SOM - PRISM-daily 1981-2019", xlab=NULL, ylab=NULL)+
+  pComp<-levelplot(comp, contour=FALSE, margin=FALSE, par.settings=mapTheme,layout=c(ncols,nrows), at=at, 
+                     main="Composite Max Precip JAS 4x5 SOM - PRISM-daily 1981-2019", xlab=NULL, ylab=NULL)+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
   #####
 
+  #####
+  # Composites of seas totals in given years
+  yr<-2009
+  temp<-subLayers[[which(somTime$year==yr)]]
+  comp<-stackApply(temp, somTime$mapUnit[which(somTime$year==yr)], fun=sum)
+    tempNames<-as.data.frame(names(comp))
+    colnames(tempNames)<-"index"
+    tempNames <- tempNames %>% separate(index, c(NA,"mapUnit"), sep = "_", remove=FALSE)
+    # find missing
+    emptyNodes<-setdiff(seq(from=1,to=nrows*ncols, by=1), (as.numeric(tempNames$mapUnit)))
+    emptyLyr<-comp[[1]]; emptyLyr[emptyLyr >= 0] <- NA
+    comp <- stack(comp, stack(replicate(length(emptyNodes), emptyLyr)))
+    comp<-subset(comp, order(c(as.numeric(tempNames$mapUnit),emptyNodes)))
+    names(comp)<-codeList
+    # plot 
+    at<-c(seq(0,100,5),250)
+    mapTheme<-rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
+    pComp<-levelplot(comp, contour=FALSE, margin=FALSE, par.settings=mapTheme,layout=c(ncols,nrows), at=at,  
+                     main=paste0("Composite Precipitation ",yr), xlab=NULL, ylab=NULL)+
+      layer(sp.polygons(aznm, col = 'gray40', lwd=1))
+  #####
   
   
   # Clustering of nodes
@@ -337,7 +508,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   #####
   
   # DIAGNOSTICS
-  plot(som.gh500, type="changes") # changes, codes, counts, property, quality, mapping
+  plot(som.gh500.2, type="changes") # changes, codes, counts, property, quality, mapping
   
   # summary plots -- appears to plot opposite up/down from SOM plot
   counts <- plot(som.gh500, type="counts", shape = "straight", labels=counts)
@@ -500,6 +671,54 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
       theme(axis.text.x=element_blank(),
             axis.text.y=element_blank())
   
+  # SOM node counts by MJO phase - CHECK DAY OF YEAR ALIGNMENT; 
+  temp<-subset(somTime, amplitude>=1)
+  temp2<-temp %>% group_by(phase) %>% count(phase)
+    temp2$prop<-temp2$n/sum(temp2$n)
+  temp3<-temp %>% group_by(codes) %>% count(codes)
+  countsMJO<-temp %>% group_by(codes,phase) %>% count(codes)
+  countsMJO <- countsMJO %>% separate(codes, c("row","col"), sep = "_", remove=FALSE)
+  countsMJO$row<-as.numeric(countsMJO$row); countsMJO$col<-as.numeric(countsMJO$col); 
+    countsMJO<-merge(countsMJO,temp2, by="phase")
+    countsMJO$anom<-(countsMJO$n.x/countsMJO$n.y)*100
+    countsMJO<-merge(countsMJO, temp3, by="codes")
+    countsMJO$expCt<-countsMJO$n*countsMJO$prop
+    countsMJO$anomCt<-countsMJO$n.x-countsMJO$expCt
+  ggplot(countsMJO, aes(x=col, y=-row))+
+    geom_tile(aes(fill=anomCt))+
+    geom_text(aes(label = round(anomCt,1)), size=4)+
+    facet_wrap(~phase, ncol = 4)+
+    scale_fill_gradient2(low = "lightblue",mid="white", midpoint = 0,
+                         high = "red", na.value = NA, name="count")+
+    ggtitle("Anom of expected days in each node by MJO (amp>1) Phase")+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),
+          axis.text.y=element_blank())
+  
+  # SOM node counts by ENSO phase
+  temp2<-somTime %>% group_by(ENSO) %>% count(ENSO)
+    temp2$prop<-temp2$n/sum(temp2$n)
+    temp3<-somTime %>% group_by(codes) %>% count(codes)
+  countsENSO<-somTime %>% group_by(codes,ENSO) %>% count(codes)
+  countsENSO <- countsENSO %>% separate(codes, c("row","col"), sep = "_", remove=FALSE)
+  countsENSO$row<-as.numeric(countsENSO$row); countsENSO$col<-as.numeric(countsENSO$col); 
+    countsENSO<-merge(countsENSO,temp2, by="ENSO")
+    countsENSO$anom<-(countsENSO$n.x/countsENSO$n.y)*100
+    countsENSO<-merge(countsENSO, temp3, by="codes")
+    countsENSO$expCt<-countsENSO$n*countsENSO$prop
+    countsENSO$anomCt<-countsENSO$n.x-countsENSO$expCt
+  ggplot(countsENSO, aes(x=col, y=-row))+
+    geom_tile(aes(fill=anomCt))+
+    geom_text(aes(label = round(anomCt,1)), size=4)+
+    facet_wrap(~ENSO)+
+    scale_fill_gradient2(low = "lightblue",mid="white", midpoint = 0,
+                         high = "red", na.value = NA, name="count")+
+    ggtitle("Anom of expected days in each node by ENSO Phase")+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),
+          axis.text.y=element_blank())
+  
+  
   # classification error by node-year
   errorYr<-somTime %>% 
            group_by(codes,year) %>%
@@ -584,8 +803,8 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
   ggplot(sumYr2, aes(x=col, y=-row))+
       geom_tile(aes(fill=countNodes))+
       #geom_text(aes(label = countNodes), size=2)+
-      facet_grid(as.factor(anomName)~year)+
-      #facet_wrap(as.factor(anomName)~year)+
+      #facet_grid(as.factor(anomName)~year)+
+      facet_wrap(as.factor(anomName)~year)+
       scale_fill_gradient2(low = "lightblue",mid="yellow", 
                            high = "red", midpoint = 25, 
                            na.value = NA, name="Count")+
@@ -634,6 +853,7 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
                          na.value = "grey50", guide = "colourbar")+
     ggtitle("Daily Map Correlation (Rho)")
   
+  #####
   # create composites on nodes
   NARR<-stack("/scratch/crimmins/NARR/processed/GH500_daily_NARR_WUS_1979_2019.grd")
   #NARR<-stack("/scratch/crimmins/NARR/processed/PWAT_daily_NARR_WUS_1979_2019.grd") 
@@ -660,7 +880,8 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
     
   # ggplot to plot rasters of diff resolutions
   # First, to a SpatialPointsDataFrame
-  compMean_pts <- rasterToPoints(compMean, spatial = TRUE)
+  #compMean_pts <- rasterToPoints(compMean, spatial = TRUE)
+  compMean_pts <- rasterToPoints(compSD, spatial = TRUE)
   cbRaster_pts <- rasterToPoints(cbRaster, spatial = TRUE)
   # Then to a 'conventional' dataframe
   compMean_df  <- data.frame(compMean_pts)
@@ -687,7 +908,7 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
         stat_contour(data = compMean_df , aes(x = x, y = y, z = value, color = ..level..))+
         scale_fill_gradientn(colors = c("lightblue", "blue", "green","yellow","red"))+
         #scale_color_continuous(type = "viridis") +
-        scale_color_gradient2(midpoint = 5800, low = "blue", mid = "yellow", high = "red", name = "GH" )+
+        scale_color_gradient2(midpoint = 50, low = "blue", mid = "yellow", high = "red", name = "GH" )+
         #scale_color_gradient2(midpoint = 25, low = "brown", mid = "lightgrey", high = "green", name = "PWAT(mm)" )+
         coord_cartesian(xlim = c(-125, -100), ylim = c(25, 50))+
         facet_wrap(~variable)
