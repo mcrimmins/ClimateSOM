@@ -43,7 +43,28 @@ mos<-c(7,8,9)
   # crop to region
   subLayers<-crop(subLayers,e)
 
-#pcs<-rasterPCA(subLayers)  
+# PC analysis  
+pcs<-rasterPCA(subLayers, nSamples=10000, nComp=6)  
+
+# plot all days in a year
+library(rasterVis)
+# map layers
+states <- getData('GADM', country='United States', level=1)
+az<-subset(states, NAME_1=="Arizona")
+nm<-subset(states, NAME_1=="New Mexico")
+aznm<-subset(states, NAME_1=="Arizona" | NAME_1=="New Mexico")
+at<-c(seq(-350,350,25))
+mapTheme <- rasterTheme(region = c("blue", "white","red"))
+levelplot(pcs$map, contour=FALSE, at=at, 
+          margin=FALSE, par.settings=mapTheme, 
+          main=paste0("PCA Precip, JAS PRISM-daily 1981-2019"))+
+  layer(sp.polygons(aznm, col = 'gray40', lwd=1))
+
+plot(pcs$model$center)
+plot(pcs$model$sdev[1:100])
+plot(pcs$model$loadings[1,1:20])
+screeplot(pcs$model, npcs=6)
+
 
 # percent rank of all JAS days for each grid cell  
   perc.rank<-function(x) trunc(rank(x,ties.method = "average"))/length(x)
@@ -59,7 +80,8 @@ mos<-c(7,8,9)
   perc<- stack("/scratch/crimmins/PRISM/processed/JASperRank_SWUS_1981_2019_PRISM_daily_prcp.grd") 
     prcp<-prcp[[1]]
     perc<-perc[[1]]
-    e <- extent(-115.5,-106,31.3, 37.5)
+   # e <- extent(-115.5,-106,31.3, 37.5) # AZ and wNM
+    e <- extent(-114.85,-103,31.3, 37) # all AZ and NM
       prcp<-crop(prcp,e)
       perc<-crop(perc,e)
       prcp[prcp >= 0] <- 1
