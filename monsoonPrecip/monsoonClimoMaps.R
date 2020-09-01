@@ -4,6 +4,7 @@
 library(prism)
 library(raster)
 library(rasterVis)
+library(maptools)
 
 # set rasteroptions
 rasterOptions(progress = 'text')
@@ -32,11 +33,20 @@ sps = SpatialPolygons(list(ps))
 # rastervis maps
 # map layers
 states <- getData('GADM', country='United States', level=1)
+mlra <- readShapePoly(paste0("/home/crimmins/RProjects/LivnehDrought/shapes/mlra/mlra_v42.shp"))
+# read in HUC4
+#rgdal::ogrListLayers("~/RProjects/SOMs/monsoonPrecip/shapes/wbdhu4_a_us_september2019/wbdhu4_a_us_september2019.gdb")
+huc4<-rgdal::readOGR(dsn = "~/RProjects/SOMs/monsoonPrecip/shapes/wbdhu4_a_us_september2019/wbdhu4_a_us_september2019.gdb", layer="WBDHU4")
+# intersect of HUC and study area
+huc4clip<-raster::intersect(huc4, sps)
+# save clipped shapefile
+rgdal::writeOGR(huc4clip,dsn="~/RProjects/SOMs/monsoonPrecip/shapes", layer="huc4clip",driver="ESRI Shapefile")
 
-at <- seq(0, 65, 2.5)
+at <- seq(0, 65, 1)
 p0 <- levelplot(percJAS*100, par.settings = YlOrRdTheme, ylab=NULL, xlab=NULL, margin=FALSE,
                 at=at, ylim=c(30,40), xlim=c(-120,-100), main="JAS Percent of Annual Total")+ # width=1, height=0.5, row=3, column=1, 
   layer(sp.polygons(states, col = 'gray40', lwd=0.5))+
+  layer(sp.polygons(huc4clip, col = 'gray20', lwd=0.5))+
   layer(sp.polygons(sps, col = 'black', lwd=1))
 
 
