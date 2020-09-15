@@ -142,5 +142,67 @@ screeplot(pcs$model, npcs=6)
                        main="Daily Median Precipitation PRISM, 1981-2019")+
       layer(sp.polygons(aznm, col = 'gray40', lwd=1))
     
+# get monthly PRISM from RCC ACIS
+    library(RCurl)
+    library(jsonlite)
+    library(raster)    
+    # create current date
+    #dateRangeStart=paste0(year,"-06-15")
+    #dateRangeEnd= paste0(year,"-09-30")
+    dateRangeStart="1900-01-01"
+    dateRangeEnd= "2020-12-31"
+  
+    # generate dates -- keep with PRISM date
+    allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),by="month")
+    
+    # AZ/NM bbox -115.004883,31.184609,-102.524414,37.387617
+    ACISbbox<-"-115.5,31.3,-106,37.5" 
+    
+    # ACIS query
+    jsonQuery=paste0('{"bbox":"',ACISbbox,'","sdate":"',dateRangeStart,'","edate":"',dateRangeEnd,'","grid":"21","elems":"mly_pcpn","meta":"ll,elev","output":"json"}') # or uid
+    #jsonQuery=paste0('{"bbox":"',ACISbbox,'","sdate":"',dateRangeStart,'","edate":"',dateRangeEnd,'","grid":"2","elems":"pcpn","meta":"ll","output":"json"}') # or uid
+    
+    out<-postForm("http://data.rcc-acis.org/GridData",
+                  .opts = list(postfields = jsonQuery,
+                               httpheader = c('Content-Type' = 'application/json', Accept = 'application/json')))
+    out<-fromJSON(out)
+    
+    # convert to list of matrices, flipud with PRISM
+    matrixList <- vector("list",length(out$data))
+    for(i in 1:length(out$data)){
+      matrixList[[i]]<-apply(t(out$data[[i]][[2]]),1,rev)
+    }
+    
+    # read into raster stack
+    rasterList<-lapply(matrixList, raster)
+    gridStack<-stack(rasterList)
+    gridExtent<-extent(min(out$meta$lon), max(out$meta$lon), min(out$meta$lat), max(out$meta$lat))
+    gridStack<-setExtent(gridStack, gridExtent, keepres=FALSE, snap=FALSE)
+    names(gridStack)<-allDates
+    # set 0 and neg to NA
+    gridStack[gridStack < 0] <- NA
+    ##
+    allDates<-as.data.frame(allDates)
+       allDates$month<-as.numeric(format(allDates$allDates, "%m"))
+       allDates$year<-as.numeric(format(allDates$allDates, "%Y"))
+    idx<-which(allDates$month %in% c(7,8,9)) # grab only summer months
+    allDates<-allDates[idx,]
+    gridStack<-gridStack[[idx]]
+    sumSeas<-stackApply(gridStack, allDates$year, fun = sum)
+      seasAvgPrecip<-cellStats(sumSeas, 'mean')
+      seasAvgPrecip<-cbind.data.frame(unique(allDates$year),seasAvgPrecip)
+      seasAvgPrecip$percRank<-perc.rank(seasAvgPrecip$seasAvgPrecip) 
+      colnames(seasAvgPrecip)<-c("year","avgPrecip","percRank")
+      # names
+      seasAvgPrecip$anomName<-"normal"
+      seasAvgPrecip$anomName[seasAvgPrecip$percRank<=0.33] <- "dry"
+      seasAvgPrecip$anomName[seasAvgPrecip$percRank>=0.66] <- "wet"
+         
+      ggplot(seasAvgPrecip, aes(year,avgPrecip, fill=as.factor(seasAvgPrecip$anomName)) )+
+        geom_bar(stat = 'identity')+
+        ggtitle("Regional Average Total Precip (JAS, mm)")+
+        geom_hline(yintercept=mean(seasAvgPrecip$avgPrecip), color="black")+
+        geom_hline(yintercept=median(seasAvgPrecip$avgPrecip), color="red")+
+        scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")
     
   

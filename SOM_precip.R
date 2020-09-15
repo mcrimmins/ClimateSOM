@@ -33,6 +33,9 @@ states <- getData('GADM', country='United States', level=1)
 us <- getData('GADM', country='United States', level=0)
 mx <- getData('GADM', country='Mexico', level=0)
 #cn <- getData('GADM', country='Canada', level=0)
+# ELEVATION grid
+elev<-raster("~/RProjects/SOMs/monsoonPrecip/shapes/PRISM_us_dem_4km_asc.asc")
+
 # HUC4
 huc4<-rgdal::readOGR(dsn="~/RProjects/SOMs/monsoonPrecip/shapes", layer="huc4clip")
 # station points
@@ -94,6 +97,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   subLayers<-prcp[[which(dates$month %in% mos)]]
     # crop to region
     subLayers<-crop(subLayers,e)
+    elev<-crop(elev, e)
     # apply mask
     subLayers <- mask(subLayers, mask)
   
@@ -108,6 +112,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
     seasAvgPrecip<-cellStats(sumSeas, 'mean')
       seasAvgPrecip<-cbind.data.frame(unique(subDates$year),seasAvgPrecip)
     seasAvgPrecip$percRank<-perc.rank(seasAvgPrecip$seasAvgPrecip) 
+    colnames(seasAvgPrecip)<-c("year","avgPrecip","percRank")
     # names
     seasAvgPrecip$anomName<-"normal"
     seasAvgPrecip$anomName[seasAvgPrecip$percRank<=0.33] <- "dry"
@@ -216,7 +221,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   #                         #grid = somgrid(ncols, nrows, "rectangular"),
   #                         grid = somgrid(ncols, nrows, topo="rectangular", neighbourhood.fct = c("bubble")),
   #                         #alpha = c(0.05, 0.001), # for online
-  #                         radius = c(1,0), # c(3,0.33)
+  #                         radius = c(0.5,0), # c(3,0.33)
   #                         mode= "pbatch", # "pbatch" or "online"
   #                         #mode= "online", # "pbatch" or "online"
   #                         #maxNA.fraction = 0.5,
@@ -323,8 +328,6 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   #som.gh500.2 <- expandMap(som.gh500)
   #plot(som.gh500.2, type="counts", shape = "straight", labels=counts)
   summary(som.gh500)
-  
-
     
   # RASTERVIS mapping of SOM results
   library(rasterVis)
@@ -404,11 +407,15 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   # print(p, newpage = FALSE)
   # dev.off() 
   
+  # codes with elevation
+  plot(elev,cbRaster, ylim=c(0,30))
+  
+  
   # spatial pattern correlation
-  library(pcaPP)
-  somTime$kendall<-NA
-  temp<-subLayers
-    temp[is.na(temp)] <- 0
+  # library(pcaPP)
+  # somTime$kendall<-NA
+  # temp<-subLayers
+  #   temp[is.na(temp)] <- 0
   #
   somTime$spearman<-NA
   somTime$pearson<-NA
@@ -421,13 +428,13 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
         use = "na.or.complete", method="spearman")
     # somTime$kendall[i]<-cor(values(cbRaster[[somTime$mapUnit[i]]]), values(subLayers[[i]]),
     #                          use = "na.or.complete", method="kendall")
-    somTime$kendall[i]<-cor.fk(values(cbRaster[[somTime$mapUnit[i]]]), values(temp[[i]]))
+    #somTime$kendall[i]<-cor.fk(values(cbRaster[[somTime$mapUnit[i]]]), values(temp[[i]]))
     
     somTime$rmse[i]<- sqrt(sum((values(subLayers[[i]])-values(cbRaster[[somTime$mapUnit[i]]]))^2, na.rm = TRUE)/length(values(subLayers[[i]])))
     somTime$mae[i]<- sum(abs(values(subLayers[[i]])-values(cbRaster[[somTime$mapUnit[i]]])), na.rm = TRUE)/length(values(subLayers[[i]]))
     print(i)
   }
-  rm(temp)
+  #rm(temp)
   
   mean(somTime$spearman, na.rm=TRUE)
   median(somTime$spearman, na.rm=TRUE)
@@ -438,36 +445,36 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   mean(somTime$pearson, na.rm=TRUE)
   median(somTime$pearson, na.rm=TRUE)
   
-  mean(somTime$kendall, na.rm=TRUE)
-  median(somTime$kendall, na.rm=TRUE)
+  #mean(somTime$kendall, na.rm=TRUE)
+  #median(somTime$kendall, na.rm=TRUE)
   #mean(somTime$pearson, na.rm=TRUE)
   
   ##### 
   # Kendall tau corrs of each day against each map unit
-  library(pcaPP)
-  temp<-subLayers
-  temp[is.na(temp)] <- 0
-  
-  tauCodeBook <- data.frame(matrix(vector(), 0, length(codeList),
-                         dimnames=list(c(), codeList)),
-                  stringsAsFactors=F)
-  
-  for(i in 1:nrow(somTime)){
-      for(j in 1:length(codeList)){
-        #tauCodeBook[i,j]<-cor.fk(values(cbRaster[[j]]), values(temp[[i]]))
-        tauCodeBook[i,j]<-cor(values(cbRaster[[j]]), values(temp[[i]]),
-                                 use = "na.or.complete", method="spearman")
-        
-      }
-    print(i)
-  }
-  somTime$maxTau<-max.col(tauCodeBook)
-  somTime$maxTauVal<-apply(tauCodeBook, 1, FUN=max)
-  somTime$maxTauCode<-codeList[somTime$maxTau]
-  somTime$codeDiff<-somTime$codes==somTime$maxTauCode
-     # if tau - NA, replace with 1_1
-        somTime$maxTau[is.na(somTime$maxTau)]<-1
-  somTime$unitDiff<-somTime$mapUnit-somTime$maxTau      
+  # library(pcaPP)
+  # temp<-subLayers
+  # temp[is.na(temp)] <- 0
+  # 
+  # tauCodeBook <- data.frame(matrix(vector(), 0, length(codeList),
+  #                        dimnames=list(c(), codeList)),
+  #                 stringsAsFactors=F)
+  # 
+  # for(i in 1:nrow(somTime)){
+  #     for(j in 1:length(codeList)){
+  #       #tauCodeBook[i,j]<-cor.fk(values(cbRaster[[j]]), values(temp[[i]]))
+  #       tauCodeBook[i,j]<-cor(values(cbRaster[[j]]), values(temp[[i]]),
+  #                                use = "na.or.complete", method="spearman")
+  #       
+  #     }
+  #   print(i)
+  # }
+  # somTime$maxTau<-max.col(tauCodeBook)
+  # somTime$maxTauVal<-apply(tauCodeBook, 1, FUN=max)
+  # somTime$maxTauCode<-codeList[somTime$maxTau]
+  # somTime$codeDiff<-somTime$codes==somTime$maxTauCode
+  #    # if tau - NA, replace with 1_1
+  #       somTime$maxTau[is.na(somTime$maxTau)]<-1
+  # somTime$unitDiff<-somTime$mapUnit-somTime$maxTau      
   
   #####
   
@@ -488,7 +495,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   at<-c(seq(0,50,1),100)
   mapTheme <- rasterTheme(region = c("lightblue", "blue","green","green4","yellow","red", "red4"))
   pHighCorr<-levelplot(corrRaster, contour=FALSE, margin=FALSE, par.settings=mapTheme,layout=c(ncols,nrows), at=at,
-                     main="Lowest classification error JAS 3x4 SOM - PRISM-daily 1981-2019")+
+                     main="Highest Spearman rho JAS 3x4 SOM - PRISM-daily 1981-2019")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
 
   # max Tau
@@ -537,12 +544,32 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   somTime$percZero<-(rowSums(df.wide[idx,2:ncol(df.wide)]==0)/(ncol(df.wide)-1))*100 # percent 0 precip  
   somTime$sumPrecip<-apply(df.wide[idx,2:ncol(df.wide)], 1, sum) # max value of day 
   
+  # location of precip max for each day
+  xyCentroid<-list()
+  for (i in 1:nlayers(subLayers)) {
+    xyCentroid[[i]]<- xyFromCell(subLayers[[i]],which.max(values(subLayers[[i]])))
+    print(i)
+  }
+  xyCentroid<-as.data.frame(do.call("rbind", xyCentroid))
+  maxDaily<-cbind.data.frame(somTime[,c("codes","maxPrecip")],xyCentroid)
+  colnames(maxDaily)<-c("codes","maxPrecip","lon","lat")
+  ggplot(maxDaily, aes(lon,lat, color=maxPrecip))+
+    geom_point()+
+    geom_density_2d()+
+    scale_color_gradient(low="yellow", high="blue",limits=c(0, 100), oob=squish)+
+    facet_wrap(~codes)+
+    ggtitle("Location of max daily precip by node")
+  
+  
+  
   #####
   # add in climate indices
   load("~/RProjects/SOMs/monsoonPrecip/climInd.RData")
   climInd<-climInd[,c("date","phase","amplitude","ONI")]
   climInd$date<-climInd$date+1 # align with PRISM doy
     colnames(climInd)[1]<-"date.c"
+    # shift to match ONI
+    climInd$ONI<-c(climInd$ONI[-1],NA)
   somTime<-merge(somTime,climInd, by.x="date",by.y="date.c")
    # ENSO phase
   somTime$ENSO<-"Neutral"
@@ -630,6 +657,9 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
       ggtitle("Distribution of Daily Extent Precip (%) by nodes")+
       theme(legend.position="bottom")+
       facet_wrap(~codes, scales="free_x")
+    # tests of differences
+    oneway.test(percExtent ~ codes, data = somTime, var.equal = TRUE)
+    pairwise.t.test(somTime$percExtent, somTime$codes)
     
   ggplot(somTime, aes(as.factor(somTime$codes), percExtent))+
     geom_boxplot(varwidth = TRUE)+
@@ -659,6 +689,9 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
   ggplot(somTime, aes(as.factor(somTime$codes), mae))+
     geom_boxplot(varwidth = TRUE)+
     ggtitle("Distribution of MAE (mm) by nodes")  
+  ggplot(somTime, aes(as.factor(somTime$codes), errorDist))+
+    geom_boxplot(varwidth = TRUE)+
+    ggtitle("Distribution of classification error (mm^2) by nodes") 
   
   # plot 10 random maps from selected node to assess quality
   at<-c(seq(0.01,50,1),200)
@@ -712,7 +745,7 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2019-12
 
   #####
   # Composites of seas totals in given years
-  yr<-1999
+  yr<-2017
   temp<-subLayers[[which(somTime$year==yr)]]
   comp<-stackApply(temp, somTime$mapUnit[which(somTime$year==yr)], fun=sum)
     tempNames<-as.data.frame(names(comp))
@@ -990,6 +1023,10 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
     facet_wrap(~as.factor(codes))+
     ggtitle("Daily Mean Precip vs Pearson")
     #xlim(0,5)
+  ggplot(somTime, aes(x=percExtent,y=meanPrecip))+
+    geom_point()+
+    facet_wrap(~as.factor(codes))+
+    ggtitle("Daily Precip Extent vs Mean Precip")
   
   #
   
@@ -1549,8 +1586,140 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
           coord_cartesian(xlim = c(-116,-105), ylim = c(30, 38))+
           scale_colour_gradient(low="lightblue",high="red", name="cfs")+
           ggtitle("USGS Flash Flood Peak Flows (1986-2015)")
- #####       
  
+ # seasonal total precipitation      
+ #####       
+ ggplot(seasAvgPrecip, aes(year,avgPrecip, fill=as.factor(seasAvgPrecip$anomName)) )+
+          geom_bar(stat = 'identity')+
+          ggtitle("Regional Average Total Precip (JAS, mm)")+
+          geom_hline(yintercept=mean(seasAvgPrecip$avgPrecip), color="black")+
+          geom_hline(yintercept=median(seasAvgPrecip$avgPrecip), color="red")+
+          scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")
+    # count of nodes vs seas Avg precip (monsoon vs non monsoon days)
+      temp<-somTime %>%  group_by(codes,year) %>% count(codes)
+      temp<-subset(temp, codes=="1_1")
+        plot(seasAvgPrecip$percRank, temp$n, main="1_1 day count vs seas avg precip")
+          text(seasAvgPrecip$percRank, temp$n, seasAvgPrecip$year, pos=2)
+          abline(lm(temp$n~seasAvgPrecip$percRank))
+    # stepwise regression of node counts vs seas avg precip
+          temp<-somTime %>%  group_by(codes,year) %>% count(codes)
+          temp<-dcast(temp, formula = year~codes, value.var = "n")
+          temp$precip<-seasAvgPrecip$avgPrecip
+          temp<-temp[,-1]
+          library(MASS)
+          # Fit the full model 
+          full.model <- lm(precip ~., data = temp)
+          # Stepwise regression model
+          library(leaps)          
+          models <- regsubsets(precip ~., data = temp, nvmax = 5,
+                               method = "seqrep")
+          reg.summary = summary(models)
+          reg.summary$rsq
+          
+ # make dummy date for plotting boxplots
+ somTime$dummyDate<-as.Date(paste0("2000-",somTime$month,"-",somTime$day),format="%Y-%m-%d")
+ p1<-ggplot(somTime, aes(dummyDate, percExtent, group=dummyDate))+
+          geom_boxplot(varwidth = TRUE)+
+          ggtitle("Precip Coverage>0 (%) by day")+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   scale_x_date(labels = date_format("%m/%d"))+
+   xlab("Day of Year")+
+   ylab("% Extent")
+
+ ggplot(somTime, aes(dummyDate, percExtent5, group=dummyDate))+
+   geom_boxplot(varwidth = TRUE)+
+   ggtitle("Precip Coverage>5mm (%) by day")+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   scale_x_date(labels = date_format("%m/%d"))+
+   xlab("Day of Year")+
+   ylab("% Extent")
+ 
+ p2<-ggplot(somTime, aes(dummyDate, percExtent10, group=dummyDate))+
+   geom_boxplot(varwidth = TRUE)+
+   ggtitle("Precip Coverage>10mm (%) by day")+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   scale_x_date(labels = date_format("%m/%d"))+
+   xlab("Day of Year")+
+   ylab("% Extent")
+ 
+ ggplot(somTime, aes(dummyDate, meanPrecip, group=dummyDate))+
+   geom_boxplot(varwidth = TRUE)+
+   ggtitle("Mean Precip(mm) by day")+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   scale_x_date(labels = date_format("%m/%d"))+
+   xlab("Day of Year")+
+   ylab("mm")
+    
+ ggplot(somTime, aes(dummyDate, medPrecip, group=dummyDate))+
+   geom_boxplot(varwidth = TRUE)+
+   ggtitle("Median Precip(mm) by day")+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   scale_x_date(labels = date_format("%m/%d"))+
+   xlab("Day of Year")+
+   ylab("mm")    
+        
+ p3<-ggplot(somTime, aes(dummyDate, maxPrecip, group=dummyDate))+
+   geom_boxplot(varwidth = TRUE)+
+   ggtitle("Max Precip(mm) by day")+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   scale_x_date(labels = date_format("%m/%d"))+
+   xlab("Day of Year")+
+   ylab("mm")    
+ # cowplot multi
+ plot_grid(p1,p2,p3, align="v", ncol=1)
+
+ library("PerformanceAnalytics")
+ chart.Correlation(somTime[,c("percExtent","percExtent5","percExtent10","maxPrecip","meanPrecip","medPrecip")], histogram=TRUE, pch=19)
+ # rank of values
+   temp<-subLayers
+   temp[temp ==0] <- NA 
+   histPrecip<-hist(getValues(temp), main="Histogram of all precip values (mm)")
+   qPrecip<-quantile(getValues(temp), probs=c(0.1,0.5,0.90), na.rm=TRUE)
+ 
+# grouped extent and mean/max day of year
+   temp<-somTime[,c("dummyDate","percExtent","percExtent10")]
+   temp<-melt(temp, id.vars = c("dummyDate"))
+   p1<-ggplot(temp, aes(dummyDate, value, group=interaction(dummyDate,variable), color=variable))+
+     geom_boxplot(outlier.shape = NA)+
+     ggtitle("Precip Coverage>0 (%) by day")+
+     #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+     scale_x_date(labels = date_format("%m/%d"))+
+     xlab("Day of Year")+
+     ylab("% Extent")
+   temp<-somTime[,c("dummyDate","meanPrecip","maxPrecip")]
+   temp<-melt(temp, id.vars = c("dummyDate"))
+   p2<-ggplot(temp, aes(dummyDate, value, group=interaction(dummyDate,variable), color=variable))+
+     geom_boxplot(outlier.shape = NA)+
+     ggtitle("Mean/Max Precip(mm) by day")+
+     #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+     scale_x_date(labels = date_format("%m/%d"))+
+     xlab("Day of Year")+
+     ylab("mm")+  
+      ylim(0,100)
+   
+ #####       
+   
+#####
+   # create intensity index
+   # http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/
+   library(factoextra)
+   res.pca <- prcomp(somTime[,c(13:17)], scale = TRUE)
+   fviz_eig(res.pca)
+   fviz_pca_var(res.pca,
+                col.var = "contrib", # Color by contributions to the PC
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                repel = TRUE     # Avoid text overlapping
+   )
+   somTime$pc1<-res.pca$x[,1]
+   somTime$pc2<-res.pca$x[,2]
+   
+#####   
+   
+   
+        
+#####        
+        
+        
 #####
 # station metrics
         # bind station datas
@@ -1590,13 +1759,23 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
   
         
 #####        
-              
+  ### sample day maps showing progression of extent and max precip
+          # plot 10 random maps from selected node to assess quality
+          at<-c(seq(0.01,50,1),105)
+          mapTheme <- rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
+          temp<-subLayers[[which(somTime$date>=as.Date("1998-07-01") & somTime$date<=as.Date("1998-07-06"))]]
+          temp[temp == 0] <- NA  
+          pExamp<-levelplot(temp, contour=FALSE, 
+                           margin=FALSE, par.settings=mapTheme, at=at,
+                           main="Sample days - PRISM-daily 1981-2019")+
+            layer(sp.polygons(aznm, col = 'gray40', lwd=1))
+          somTime[which(somTime$date>=as.Date("1998-07-01") & somTime$date<=as.Date("1998-07-06")),c("date","codes","percExtent","percExtent10","maxPrecip")]
         
 #####        
         
   
 ##### Predict classification of new events - 
-  newPrcp<-stack("~/RProjects/SOMs/monsoonPrecip/SWUS_070120_081320_PRISM_daily_prcp.grd")
+  newPrcp<-stack("~/RProjects/SOMs/monsoonPrecip/SWUS_070120_083120_PRISM_daily_prcp.grd")
   # crop to region
   newPrcp <-crop(newPrcp,e)
   # apply mask
