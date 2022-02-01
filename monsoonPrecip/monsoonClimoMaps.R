@@ -44,8 +44,8 @@ rgdal::writeOGR(huc4clip,dsn="~/RProjects/SOMs/monsoonPrecip/shapes", layer="huc
 
 at <- seq(0, 65, 1)
 p0 <- levelplot(percJAS*100, par.settings = YlOrRdTheme, ylab=NULL, xlab=NULL, margin=FALSE,
-                at=at, ylim=c(30,40), xlim=c(-120,-100), main="JAS Percent of Annual Total")+ # width=1, height=0.5, row=3, column=1, 
-  layer(sp.polygons(states, col = 'gray40', lwd=0.5))+
+                at=at, ylim=c(30,40), xlim=c(-120,-100), main="Percent of Average Annual Precip in July-Sept")+ # width=1, height=0.5, row=3, column=1, 
+  layer(sp.polygons(states, col = 'gray40', lwd=1))+
   layer(sp.polygons(huc4clip, col = 'gray20', lwd=0.5))+
   layer(sp.polygons(sps, col = 'black', lwd=1))
 

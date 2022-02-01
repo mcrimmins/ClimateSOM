@@ -52,7 +52,8 @@ dates<-as.data.frame(seq.Date(as.Date("1979-01-01"),as.Date("2019-12-31"),1))
   dates$doy_ly<-leap_every_year(dates$date) # this day of year without leap day shifts
 
   # subset layers to months of interest
-  mos<-c(6,7,8,9)
+  #mos<-c(6,7,8,9)
+  mos<-c(4,5,6)
   subDates<-dates[which(dates$month %in% mos),]
   subLayers<-gh500[[which(dates$month %in% mos)]]
   subLayers2<-prcp[[which(dates$month %in% mos)]]
@@ -72,8 +73,8 @@ dates<-as.data.frame(seq.Date(as.Date("1979-01-01"),as.Date("2019-12-31"),1))
   
   
   # kohonen SOM
-  nrows=5
-  ncols=7
+  nrows=4
+  ncols=6
   som.gh500 <- som(as.matrix(df.wide[,2:ncol(df.wide)]), grid = somgrid(ncols, nrows, "rectangular"))
   codebook<-as.data.frame(som.gh500$codes)
   code_grid<-as.data.frame(som.gh500$grid$pts)

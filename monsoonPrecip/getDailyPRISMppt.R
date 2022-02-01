@@ -13,7 +13,10 @@ rasterOptions(progress = 'text')
 options(prism.path = "~/RProjects/SOMs/monsoonPrecip/recentPRISM/") 
 
 # download tmean daily data
-get_prism_dailys(type="ppt", minDate = "2020-08-01", maxDate = "2020-8-31", keepZip=FALSE)
+get_prism_dailys(type="ppt", minDate = "2021-06-15", maxDate = "2021-9-30", keepZip=FALSE)
+
+# clean archive
+#prism_archive_clean("ppt", "daily")
 
 ### NEED TO FIX FILES WHEN THE CHANGE TO FINAL
 
@@ -25,8 +28,8 @@ dateOrder<-as.data.frame(sort.int(dates, index.return=TRUE))
 
 # get into stack
 precip_stack<-stack()
-yr1<-2020
-yr2<-2020
+yr1<-2021
+yr2<-2021
 for(i in yr1:yr2){
   paste0(i,"-01-01")
   subsetDateX<-dateOrder$ix[which(dateOrder$x >= paste0(i,"-01-01") & dateOrder$x <= paste0(i,"-12-31"))]
@@ -40,6 +43,6 @@ for(i in yr1:yr2){
 }  
 
 # name layers
-names(precip_stack)<-seq.Date(as.Date("2020-07-01"),as.Date("2020-8-31"),1)
+names(precip_stack)<-seq.Date(as.Date("2021-06-15"),as.Date("2021-9-30"),1)
 # write out raw yearly values
-writeRaster(precip_stack,filename="~/RProjects/SOMs/monsoonPrecip/SWUS_070120_083120_PRISM_daily_prcp.grd", overwrite=TRUE)
+writeRaster(precip_stack,filename="~/RProjects/SOMs/monsoonPrecip/SWUS_061521_093021_PRISM_daily_prcp.grd", overwrite=TRUE)

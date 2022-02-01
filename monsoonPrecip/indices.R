@@ -18,6 +18,13 @@ indexFile<-getURL("https://psl.noaa.gov/data/correlation/oni.data")
 ONI <- read.table(textConnection(indexFile), skip=1, header=F, sep="", nrows=length(seq(1950,2020,1)))
 colnames(ONI)<-c("year", seq(1,12,1))
 
+# AO from ESRL
+# https://psl.noaa.gov/data/correlation/ao.data
+# indexFile<-getURL("https://psl.noaa.gov/data/correlation/ao.data")
+# AOI <- read.table(textConnection(indexFile), skip=1, header=F, sep="", nrows=length(seq(1950,2020,1)))
+# colnames(ONI)<-c("year", seq(1,12,1))
+
+
 # combine into time series for SOM analysis 1981-2019
 ONI<-melt(ONI, measure.vars = 2:13)
 ONI$moDate<-as.Date(paste0(ONI$variable,"-01-",ONI$year),format = "%m-%d-%Y")

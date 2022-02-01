@@ -14,7 +14,7 @@ leap_every_year <- function(x) {
 }
 
 # load PRISM for SW Region
-prcp<- stack("/scratch/crimmins/PRISM/processed/SWUS_1981_2019_PRISM_daily_prcp.grd") 
+prcp<- stack("/scratch/crimmins/PRISM/processed/SWUS_1981_2020_PRISM_daily_prcp.grd") 
 
 # crop to SW/NMX region
 #e <- extent(-115,-102,25.5, 37.5)
@@ -23,7 +23,7 @@ e <- extent(-115.5,-106,31.3, 37.5)
 # AZ only
 #e <- extent(subset(states, NAME_1=="Arizona"))
 #e<-extent(aznm)
-#prcp <- (crop(prcp, e)) # can also add in rotate to convert lon to neg
+prcp <- (crop(prcp, e)) # can also add in rotate to convert lon to neg
 
 # dates - find and remove leap days
 startYr<-1981
@@ -71,7 +71,7 @@ screeplot(pcs$model, npcs=6)
   percRankPrecip <- calc(subLayers, fun=perc.rank)
   percRankPrecip <-(percRankPrecip[[nlayers(percRankPrecip)]])*100
   
-  writeRaster(percRankPrecip, filename = "/scratch/crimmins/PRISM/processed/JASperRank_SWUS_1981_2019_PRISM_daily_prcp.grd",
+  writeRaster(percRankPrecip, filename = "/scratch/crimmins/PRISM/processed/JASperRank_SWUS_1981_2020_PRISM_daily_prcp.grd",
               overwrite=TRUE)
   
   # create NA MASK
@@ -150,8 +150,10 @@ screeplot(pcs$model, npcs=6)
     #dateRangeStart=paste0(year,"-06-15")
     #dateRangeEnd= paste0(year,"-09-30")
     dateRangeStart="1900-01-01"
-    dateRangeEnd= "2020-12-31"
+    dateRangeEnd= "2021-12-31"
   
+    perc.rank<-function(x) trunc(rank(x,ties.method = "average"))/length(x)
+    
     # generate dates -- keep with PRISM date
     allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),by="month")
     
@@ -186,6 +188,7 @@ screeplot(pcs$model, npcs=6)
        allDates$month<-as.numeric(format(allDates$allDates, "%m"))
        allDates$year<-as.numeric(format(allDates$allDates, "%Y"))
     idx<-which(allDates$month %in% c(7,8,9)) # grab only summer months
+    #idx<-which(allDates$month %in% c(7)) # grab only summer months
     allDates<-allDates[idx,]
     gridStack<-gridStack[[idx]]
     sumSeas<-stackApply(gridStack, allDates$year, fun = sum)
@@ -197,12 +200,14 @@ screeplot(pcs$model, npcs=6)
       seasAvgPrecip$anomName<-"normal"
       seasAvgPrecip$anomName[seasAvgPrecip$percRank<=0.33] <- "dry"
       seasAvgPrecip$anomName[seasAvgPrecip$percRank>=0.66] <- "wet"
-         
+      
+      library(cowplot)   
       ggplot(seasAvgPrecip, aes(year,avgPrecip, fill=as.factor(seasAvgPrecip$anomName)) )+
         geom_bar(stat = 'identity')+
-        ggtitle("Regional Average Total Precip (JAS, mm)")+
+        ggtitle("Regional Average Total Precip (July-Aug-Sept)")+
         geom_hline(yintercept=mean(seasAvgPrecip$avgPrecip), color="black")+
         geom_hline(yintercept=median(seasAvgPrecip$avgPrecip), color="red")+
-        scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")
+        scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")+
+        ylab("inches")
     
   
