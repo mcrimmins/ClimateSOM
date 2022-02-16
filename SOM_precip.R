@@ -392,14 +392,15 @@ dates<-as.data.frame(seq.Date(as.Date(paste0(startYr,"-01-01")),as.Date("2020-12
   #som.gh500.2 <- expandMap(som.gh500)
   #plot(som.gh500.2, type="counts", shape = "straight", labels=counts)
   summary(som.gh500)
-  
-  # add in activity categories
-activity<- rbind.data.frame(cbind(c("1_1"), c("Inactive"),c("Inactive")),
-            cbind(c("1_2","2_1","2_2"),rep("Active-low",3),rep("Active",3)),
-            cbind(c("1_3","3_1","3_2","2_3","3_3"), rep("Active-high",5),rep("Active",5)),
-            cbind(c("1_4","4_1","4_2","2_4","3_4","4_3","4_4"), rep("Widespread"),rep("Active")))
-colnames(activity)<-c("codes","activityCat","activityCat2")
-somTime<-left_join(somTime,activity)
+
+# ACTIVITY CLASSIFICATIONS    
+# add in activity categories - 4x symmetric
+# activity<- rbind.data.frame(cbind(c("1_1"), c("Inactive"),c("Inactive")),
+#             cbind(c("1_2","2_1","2_2"),rep("Active-low",3),rep("Active",3)),
+#             cbind(c("1_3","3_1","3_2","2_3","3_3"), rep("Active-high",5),rep("Active",5)),
+#             cbind(c("1_4","4_1","4_2","2_4","3_4","4_3","4_4"), rep("Widespread"),rep("Active")))
+# colnames(activity)<-c("codes","activityCat","activityCat2")
+# somTime<-left_join(somTime,activity)
 # alt activity based on kmeans majority
 # activityAlt<- rbind.data.frame(cbind(c("1_1"), c("Inactive")),
 #                             cbind(c("1_2","2_1","2_2"),rep("Active-low",3)),
@@ -407,6 +408,17 @@ somTime<-left_join(somTime,activity)
 #                             cbind(c("4_1","3_4","4_3","4_4"), rep("Widespread")))
 # colnames(activityAlt)<-c("codes","activityCatAlt")
 # somTime<-left_join(somTime,activityAlt)
+# LARGER ACTIVE HIGH CATEGORY
+activity<- rbind.data.frame(cbind(c("1_1"), c("Inactive"),c("Inactive")),
+                            cbind(c("1_2","2_1","2_2"),rep("Active-low",3),rep("Active",3)),
+                            cbind(c("1_3","3_1","3_2","2_3","3_3","1_4","4_1","4_2","2_4"), rep("Active-high",9),rep("Active",9)),
+                            cbind(c("3_4","4_3","4_4"), rep("Widespread"),rep("Active")))
+colnames(activity)<-c("codes","activityCat","activityCat2")
+somTime<-left_join(somTime,activity)
+######
+
+
+
     
   # RASTERVIS mapping of SOM results
   library(rasterVis)
@@ -503,14 +515,14 @@ somTime<-left_join(somTime,activity)
             main="Precip Patterns Jun 15-Sep 30 4x4 SOM - PRISM-daily 1981-2020")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))+
     layer(sp.points(stations, col="black", pch = 18, cex=0.5))+
-    #contourplot(elev, at=c(1000,2000,3000), labels=FALSE, lwd = 0.3, par.settings = GrTheme)+
-    layer(sp.polygons(ecoreg, col="black", pch = 18, cex=0.5))+
+    contourplot(elev, at=c(1000,2000,3000), labels=FALSE, lwd = 0.3, par.settings = GrTheme)
+    #layer(sp.polygons(ecoreg, col="black", pch = 18, cex=0.5))+
     #layer(sp.text(c(36.0840,-115.1537),"LAS"))+
     #layer(sp.points(xyCentroid[panel.number()],
     #              pch=20, cex=1, col="black"))+
     #layer(panel.rect(-115.5,31.3,-113.0,32.0,fill=textCol[panel.number()]))+
     #layer(panel.rect(-115.5,31.3,-113.0,32.0, border=textCol[panel.number()]))+
-    layer(panel.text(-114.25, 31.55, text2add[panel.number()],col="black",cex=0.4))
+    #layer(panel.text(-114.25, 31.55, text2add[panel.number()],col="black",cex=0.4))
     #layer(panel.text(stationCodes[panel.number(1),3], stationCodes[panel.number(1),2],
     #                 stationCodes[panel.number(1),1],col="black",cex=0.4))
   
@@ -524,7 +536,46 @@ somTime<-left_join(somTime,activity)
     #          gp = gpar(col = "red"))
      png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/precip_JJAS_SOM_4x4.png", width = 10, height = 6, units = "in", res = 300L)
      pPrecip
-     # vert line 
+     #####
+     # # vert line - original
+     #  grid.lines(x = unit(c(0.2465, 0.2465), "npc"),
+     #             y = unit(c(0.75, 1), "npc"),
+     #             default.units = "npc",
+     #             arrow = NULL, name = NULL,
+     #             gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
+     #  grid.lines(x = unit(c(0.5, 0.5), "npc"),
+     #             y = unit(c(0.497, 1), "npc"),
+     #             default.units = "npc",
+     #             arrow = NULL, name = NULL,
+     #             gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")    
+     #  grid.lines(x = unit(c(0.753, 0.753), "npc"),
+     #             y = unit(c(0.246, 1), "npc"),
+     #             default.units = "npc",
+     #             arrow = NULL, name = NULL,
+     #             gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp") 
+     #  # horiz line 
+     #  grid.lines(x = unit(c(0, 0.2465), "npc"),
+     #             y = unit(c(0.75,0.75), "npc"),
+     #             default.units = "npc",
+     #             arrow = NULL, name = NULL,
+     #             gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")  
+     #  grid.lines(x = unit(c(0, 0.5), "npc"),
+     #             y = unit(c(0.497,0.497), "npc"),
+     #             default.units = "npc",
+     #             arrow = NULL, name = NULL,
+     #             gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
+     #  grid.lines(x = unit(c(0, 0.753), "npc"),
+     #             y = unit(c(0.246,0.246), "npc"),
+     #             default.units = "npc",
+     #             arrow = NULL, name = NULL,
+     #             gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
+     #  grid.text( label = "Inactive", x = 0.11, y = 0.80, rot = 90, default.units = "npc", gp=gpar(col="red"))
+     #  grid.text( label = "Active-Low", x = 0.11, y = 0.58, rot = 90, default.units = "npc", gp=gpar(col="red"))
+     #  grid.text( label = "Active-High", x = 0.11, y = 0.36, rot = 90, default.units = "npc", gp=gpar(col="red"))
+     #  grid.text( label = "Widespread", x = 0.11, y = 0.14, rot = 90, default.units = "npc", gp=gpar(col="red"))
+     #  #print(pPrecip, newpage = FALSE)
+     #####  
+      # vert line - 3 widespread
       grid.lines(x = unit(c(0.2465, 0.2465), "npc"),
                  y = unit(c(0.75, 1), "npc"),
                  default.units = "npc",
@@ -536,10 +587,17 @@ somTime<-left_join(somTime,activity)
                  arrow = NULL, name = NULL,
                  gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")    
       grid.lines(x = unit(c(0.753, 0.753), "npc"),
-                 y = unit(c(0.246, 1), "npc"),
+                 y = unit(c(0.246, 0.5), "npc"),
                  default.units = "npc",
                  arrow = NULL, name = NULL,
                  gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp") 
+      
+      grid.lines(x = unit(c(0.5, 0.5), "npc"),
+                 y = unit(c(0,0.246), "npc"),
+                 default.units = "npc",
+                 arrow = NULL, name = NULL,
+                 gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
+      
       # horiz line 
       grid.lines(x = unit(c(0, 0.2465), "npc"),
                  y = unit(c(0.75,0.75), "npc"),
@@ -551,16 +609,23 @@ somTime<-left_join(somTime,activity)
                  default.units = "npc",
                  arrow = NULL, name = NULL,
                  gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
-      grid.lines(x = unit(c(0, 0.753), "npc"),
+      grid.lines(x = unit(c(0.5, 0.753), "npc"),
                  y = unit(c(0.246,0.246), "npc"),
                  default.units = "npc",
                  arrow = NULL, name = NULL,
                  gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
+      
+      grid.lines(x = unit(c(0.753,1), "npc"),
+                 y = unit(c(0.5,0.5), "npc"),
+                 default.units = "npc",
+                 arrow = NULL, name = NULL,
+                 gp=gpar(lwd=2, col="red"), draw = TRUE, vp = "plot_01.toplevel.vp::plot_01.figure.vp")
+      
       grid.text( label = "Inactive", x = 0.11, y = 0.80, rot = 90, default.units = "npc", gp=gpar(col="red"))
       grid.text( label = "Active-Low", x = 0.11, y = 0.58, rot = 90, default.units = "npc", gp=gpar(col="red"))
-      grid.text( label = "Active-High", x = 0.11, y = 0.36, rot = 90, default.units = "npc", gp=gpar(col="red"))
-      grid.text( label = "Widespread", x = 0.11, y = 0.14, rot = 90, default.units = "npc", gp=gpar(col="red"))
-      #print(pPrecip, newpage = FALSE)  
+      grid.text( label = "Active-High", x = 0.11, y = 0.25, rot = 90, default.units = "npc", gp=gpar(col="red"))
+      grid.text( label = "Widespread", x = 0.66, y = 0.025, rot = 0, default.units = "npc", gp=gpar(col="red"))
+      
       dev.off() 
   
   # codes with elevation
@@ -670,10 +735,10 @@ somTime<-left_join(somTime,activity)
   
   
   # inter-node correlations
-  # library(corrplot)
-  # corrmtx<-cor(t(codebook[,3:ncol(codebook)]), method = "spearman")
-  # corrplot(corrmtx, type = "upper", 
-  #          tl.col = "black", tl.srt = 45)
+   # library(corrplot)
+   # corrmtx<-cor(t(codebook[,3:ncol(codebook)]), method = "spearman")
+   # corrplot(corrmtx, type = "upper", 
+   #          tl.col = "black", tl.srt = 45)
   
   # sum of square errors
   #i=4
@@ -695,6 +760,7 @@ somTime<-left_join(somTime,activity)
   somTime$percExtent1<-(rowSums(df.wide[idx,2:ncol(df.wide)]>1)/(ncol(df.wide)-1))*100 # percent extent >1
   somTime$percExtent5<-(rowSums(df.wide[idx,2:ncol(df.wide)]>=5)/(ncol(df.wide)-1))*100 # percent extent >5 mm
   somTime$percExtent10<-(rowSums(df.wide[idx,2:ncol(df.wide)]>=10)/(ncol(df.wide)-1))*100 # percent extent >0
+   #somTime$percExtent25<-(rowSums(df.wide[idx,2:ncol(df.wide)]>=25)/(ncol(df.wide)-1))*100 # percent extent >0
   somTime$maxPrecip<-apply(df.wide[idx,2:ncol(df.wide)], 1, max) # max value of day
   somTime$meanPrecip<-apply(df.wide[idx,2:ncol(df.wide)], 1, mean)# mean regional precip
   somTime$medPrecip<-apply(df.wide[idx,2:ncol(df.wide)], 1, median) # max value of day  
@@ -800,16 +866,26 @@ somTime<-left_join(somTime,activity)
       
   #####    
   # counts of nodes by day of year
+    # add in max non 1_1 day
+    maxNode<-somTime %>% group_by(month,day) %>% count(codes)
+        maxNode<-spread(maxNode, key=codes, value=n)
+        maxNode[, "max"] <- apply(maxNode[, 4:ncol(maxNode)], 1, which.max)
+        maxNode$maxCount<-maxNode[,maxNode$max]
+        maxNode$max<-colnames(maxNode[,4:(ncol(maxNode)-1)])[maxNode$max]
+        #maxNode$max<-ifelse(maxNode$`1_1`<20, maxNode$max, NA)  
+  
     countDOY<-somTime %>% group_by(month,day) %>% count(codes)
       countDOY <- countDOY %>% group_by(month,day) %>% summarize(maxCount=max(n),
                                                                  maxNode= codes[which.max(n)])
     countDOY$date<-as.Date(paste0(countDOY$month,"-",countDOY$day,"-2016"), format="%m-%d-%Y")      
     countDOY$wday<-wday(countDOY$date, label = T, week_start = 7)
     countDOY$week<-epiweek(countDOY$date)
+    countDOY$maxNodeAlt<-maxNode$max
+    
     countDOY %>%
       ggplot(aes(wday,-week, fill = maxCount)) +
       geom_tile(colour = "white")  + 
-      geom_text(aes(label = maxNode), size = 3) +
+      geom_text(aes(label = maxNodeAlt), size = 3) +
       theme(aspect.ratio = 1/2,
             axis.title.x = element_blank(),
             axis.title.y = element_blank(),
@@ -823,7 +899,54 @@ somTime<-left_join(somTime,activity)
       scale_fill_gradient(low="lightblue", high="red") +
       facet_wrap(~month, nrow = 4, ncol = 1, scales = "free") +
       labs(title = "Most frequent nodes by day of year")
+    
+    # plot transitions of most common active days
+    countDOY<-countDOY %>%
+      separate(maxNodeAlt, c("row", "col"), "_")
+    countDOY$row<-as.numeric(countDOY$row)
+    countDOY$col<-as.numeric(countDOY$col)
+    
+    countDOY$row <- jitter(countDOY$row)
+    countDOY$col <- jitter(countDOY$col)
+    
+  subset(countDOY,is.na(countDOY$row)==FALSE)%>%
+    ggplot()+
+      geom_point(aes(col, row, color=date))+
+     #geom_path(aes(col, row, color=date))+
+     scale_y_reverse(breaks=c(1,2,3,4), labels=c(1,2,3,4))+
+     scale_x_continuous(breaks=c(1,2,3,4), labels=c(1,2,3,4))+
+     geom_hline(yintercept = c(1.5,2.5,3.5))+
+     geom_vline(xintercept = c(1.5,2.5,3.5))+
+     expand_limits(x = 4.5, y = 4.5)+
+      scale_color_date(low = "blue",high = "yellow")+
+    #scale_color_gradient2(low="blue",mid = "green",high = "red")+
+    ggtitle("most common active day progression")
+   
+  # make curvy
+  # https://stackoverflow.com/questions/34473292/adding-slight-curve-or-bend-in-ggplot-geom-path-to-make-path-easier-to-read
+    test<-data.frame(xspline(countDOY[22:40,c("row","col")], shape=-1, draw=F))
 
+    
+  # max node/day top 3 with counts
+    temp<-somTime %>% group_by(month,day) %>% count(codes)  
+    temp<-temp %>% group_by(month,day) %>% slice_max(n, n = 3)        
+    temp$date<-as.Date(paste0("2000-",temp$month,"-",temp$day),"%Y-%m-%d")
+    temp$percN<-(temp$n/length(unique(somTime$year)))*100
+    
+    ggplot(temp, aes(date,percN, fill=codes))+
+      geom_bar(stat="identity")+
+      ylab("% of days")+
+      ggtitle("Most frequent node/day")+
+      theme_bw()
+    
+    temp<-somTime %>% group_by(month,day,activityCat) %>% count(codes)  
+    temp<-temp %>% group_by(month,day) %>%  slice_max(n, n = 1)        
+    temp$date<-as.Date(paste0("2000-",temp$month,"-",temp$day),"%Y-%m-%d")
+    temp$percN<-(temp$n/length(unique(somTime$year)))*100
+    
+    ggplot(temp, aes(date,percN, fill=codes))+
+      geom_bar(stat="identity")
+    
     #####  
     
   # distribution of daily precip values by node
@@ -840,23 +963,32 @@ somTime<-left_join(somTime,activity)
     pairwise.t.test(somTime$percExtent10, somTime$codes)
     # distribution by activity
     #extentPerc<-somTime[,c("activityCat","percExtent","percExtent5","percExtent10")] 
-    extentPerc<-somTime[,c("activityCat2","percExtent1","percExtent10")] 
-    extentPerc<-melt(extentPerc, id.vars="activityCat2")
-    ggplot(extentPerc, aes(x=activityCat2, y=value, fill=variable))+
+    extentPerc<-somTime[,c("activityCat","percExtent1","percExtent10")] 
+    extentPerc<-melt(extentPerc, id.vars="activityCat")
+    ggplot(extentPerc, aes(x=activityCat, y=value, fill=variable))+
       geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2)+
       ggtitle("Distribution of Daily Extent Precip (%) by nodes")+
       theme(legend.position="bottom")
       #facet_wrap(~codes, scales="free_x")
     # dist by codes/activity
     #extentPerc<-somTime[,c("codes","activityCat","percExtent","percExtent5","percExtent10")]
-    extentPerc<-somTime[,c("codes","activityCat","percExtent1","percExtent10")] 
+    extentPerc<-somTime[,c("codes","activityCat","percExtent10")] 
     extentPerc<-melt(extentPerc, id.vars=c("codes","activityCat"))
-    ggplot(extentPerc, aes(x=codes, y=value, fill=variable))+
-      geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2)+
+    ggplot(extentPerc, aes(x=reorder(codes, value), y=value, fill=variable))+
+      geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2, outlier.shape = NA)+
       ggtitle("Distribution of Daily Extent Precip (%) by nodes")+
       theme(legend.position="bottom")+
       facet_wrap(~activityCat, scales="free_x",nrow = 1)
-    pairwise.t.test(somTime$percExtent10, somTime$activityCat)
+    #pairwise.t.test(somTime$percExtent1, somTime$activityCat)
+    
+    # within activity class
+    temp<-subset(somTime, activityCat=="Active-high")
+    pairwise.t.test(temp$percExtent10, temp$codes)
+    kruskal.test(percExtent1 ~ codes, data = temp)                
+    pairwise.wilcox.test(temp$percExtent10, temp$codes,
+                         p.adjust.method = "BH")
+    
+    
     # dist of max precip by codes/activity
     extentPerc<-somTime[,c("codes","activityCat","maxPrecip")]  
     extentPerc<-melt(extentPerc, id.vars=c("codes","activityCat"))
@@ -867,6 +999,7 @@ somTime<-left_join(somTime,activity)
       facet_wrap(~activityCat, scales="free_x",nrow = 1)
     pairwise.t.test(somTime$maxPrecip, somTime$activityCat)
     pairwise.t.test(somTime$maxPrecip, somTime$codes)
+    
     # dist of median precip by codes/activity
     extentPerc<-somTime[,c("codes","activityCat","medPrecip")]  
     extentPerc<-melt(extentPerc, id.vars=c("codes","activityCat"))
@@ -901,8 +1034,8 @@ somTime<-left_join(somTime,activity)
         somTime$kmeans<-kmeanExtent$cluster
         ggplot(somTime, aes(kmeans))+
           geom_histogram()+
-          facet_wrap(~activityCat)+
-          ylim(0,100)
+          facet_wrap(~codes)+
+          ylim(0,500)
             
     
   ggplot(somTime, aes(as.factor(somTime$codes), percExtent1))+
@@ -1484,8 +1617,27 @@ somTime<-left_join(somTime,activity)
           geom_text()+
           geom_smooth(method='lm')+
           ggtitle("Seas Precip vs Active days")
+        ggplot(seasStats, aes(avgPrecip,`Active-high`,label=year))+
+          geom_point()+
+          geom_text()+
+          geom_smooth(method='lm')+
+          ggtitle("Seas Precip vs Active-high days")
+        ggplot(seasStats, aes(avgPrecip,`Active-low`,label=year))+
+          geom_point()+
+          geom_text()+
+          geom_smooth(method='lm')+
+          ggtitle("Seas Precip vs Active-low days")
         
         
+        m<-lm(avgPrecip~`Active-high`+Widespread, data=seasStats)
+          summary(m)
+        m<-lm(avgPrecip~allActive, data=seasStats)
+          summary(m)
+        m<-lm(avgPrecip~`Active-high`, data=seasStats)
+          summary(m)
+        m<-lm(avgPrecip~`Active-low`, data=seasStats)
+          summary(m)  
+          
         
         # add to activity frequency plot
         # activity chart 
@@ -1501,6 +1653,16 @@ somTime<-left_join(somTime,activity)
             fill = NA, align="center"))
         countDOY$avg5 <- ifelse(is.na(countDOY$avg5), countDOY$n, countDOY$avg5)
         
+        ggplot(countDOY, aes(fill=as.factor(activityCat), y=n, x=dummyDate)) + 
+          #geom_bar(position="stack", stat="identity")
+          geom_bar(position="fill", stat="identity")+
+          scale_fill_brewer(type = "qual",
+                            palette = "Paired",
+                            direction = 1,
+                            aesthetics = "fill")+
+          ggtitle("Activity frequency by day through season")
+        
+        
         p1<-ggplot(countDOY, aes(fill=as.factor(activityCat), y=avg5, x=dummyDate)) + 
           #geom_bar(position="stack", stat="identity")
           geom_bar(position="fill", stat="identity")+
@@ -1508,6 +1670,7 @@ somTime<-left_join(somTime,activity)
                             palette = "Paired",
                             direction = 1,
                             aesthetics = "fill")+
+          geom_hline(yintercept = 0.5)+
           ggtitle("Activity frequency by day through season (10-day centerd mean)")
         
         temp<-gather(seasStats[,2:3],var,dates)
@@ -1553,7 +1716,7 @@ somTime<-left_join(somTime,activity)
         temp<-subset(temp, activityCat=="Widespread")
         countDOY<-temp %>% group_by(year) %>% count(codes)
         p1<-ggplot(countDOY, aes(fill=codes, y=n, x=year)) + 
-          geom_bar(position="stack", stat="identity")
+          geom_bar(position="stack", stat="identity")+
           #geom_bar(position="fill", stat="identity")+
           scale_fill_brewer(type = "qual",
                             palette = "Paired",
@@ -1602,7 +1765,7 @@ somTime<-left_join(somTime,activity)
       nodeContrib <- nodeContrib %>% separate(codes, c("row","col"), sep = "_", remove=FALSE)
       nodeContrib$row<-as.numeric(nodeContrib$row); nodeContrib$col<-as.numeric(nodeContrib$col); 
       ggplot(nodeContrib, aes(x=col,y=-row))+
-        geom_tile(aes(fill = avgAnn*100, color=activity), size=1.5)+
+        geom_tile(aes(fill = avgAnn*100), size=1.5)+
         #geom_text(aes(label = codes), size=6)+
         #geom_text(aes(label = n), size=6)+
         geom_text(aes(label = paste0(round(avgAnn*100,1)," (",round(avgCt,1),")")), size=6)+
@@ -1614,6 +1777,21 @@ somTime<-left_join(somTime,activity)
         theme_bw()+
         theme(axis.text.x=element_blank(),
               axis.text.y=element_blank())
+      
+      ggplot(nodeContrib, aes(x=col,y=-row))+
+        geom_tile(aes(fill = avg*100), size=1.5)+
+        #geom_text(aes(label = codes), size=6)+
+        #geom_text(aes(label = n), size=6)+
+        geom_text(aes(label = paste0(round(avg*100,1)," (",round(avgCt,1),")")), size=6)+
+        scale_fill_gradient(low = "#ffffb2", high = "#b10026", na.value = NA, name="% contribution")+
+        #scale_fill_gradient2(low = "blue",mid="grey", midpoint = 6.25,
+        #                     high = "red", na.value = NA, name="% contribution")+
+        ggtitle("Avg daily % contrib to seasonal total precip")+
+        #ggtitle("Median daily % contrib to seasonal total precip")+
+        theme_bw()+
+        theme(axis.text.x=element_blank(),
+              axis.text.y=element_blank())
+      
       # seasonal contribution
       nodeContrib<-temp %>% group_by(codes,year) %>%
                     summarize(sumProp=sum(seasProp),
@@ -1659,7 +1837,7 @@ somTime<-left_join(somTime,activity)
         theme_bw()+
         theme(axis.text.x=element_blank(),
               axis.text.y=element_blank())
-      # by activity class
+      # by activity class (KEY STATS FOR PAPER)
       nodeContrib<-temp %>% group_by(activityCat) %>%
         summarize(avg=mean(seasProp),
                   med=median(seasProp),
@@ -1780,7 +1958,7 @@ somTime<-left_join(somTime,activity)
       #meanSumSeas<-merge(meanSumSeas, seasStats[,c("year","avgPrecip")],by="year")            
       temp$seasProp<-temp$meanPrecip/temp$totalMeans
       # SELECT COMPARISON YEARS
-      temp<-subset(temp, year %in% c(2006,2014))
+      temp<-subset(temp, year %in% c(1984,2020))
       # average daily contribution by node
       nodeContrib<-temp %>% group_by(codes,year) %>%
         summarize(avg=mean(meanPrecip),
@@ -1796,7 +1974,7 @@ somTime<-left_join(somTime,activity)
           nodeContrib<-merge(nodeContrib, yearLab, by="year")
           nodeContrib$yearLab<-paste0(nodeContrib$year," (seas avg: ",round(nodeContrib$sum,0)," mm)")
           ggplot(nodeContrib, aes(x=col,y=-row))+
-            geom_tile(aes(fill = avg))+
+            geom_tile(aes(fill = avgAnn))+
             #geom_text(aes(label = codes), size=6)+
             #geom_text(aes(label = n), size=6)+
             geom_text(aes(label = paste0(round(avgAnn,0)," (",round(avgCt,1),")")), size=4)+
@@ -1809,6 +1987,97 @@ somTime<-left_join(somTime,activity)
             theme(axis.text.x=element_blank(),
                   axis.text.y=element_blank())
       
+      # heat map of node occurrence for select year
+          temp<-subset(somTime, year==1984)
+          temp$codes<-as.factor(temp$codes)
+          temp$codes<-factor(temp$codes, levels=c("1_1","1_2","2_2","2_1","1_4","1_3","2_4","2_3","3_3","3_2","3_1","4_2","4_1","3_4","4_3","4_4"))
+          
+          ggplot(temp, aes(date,codes, fill=activityCat))+
+            geom_point(shape=22, size=2)+
+            scale_fill_manual(values = c("#a6cee3", "#1f78b4", "#b2df8a","#33a02c"), drop=FALSE)+
+            scale_y_discrete(drop=FALSE)+
+            theme_bw()+
+            ggtitle("Daily pattern classification - 2020")
+          
+        # heat map of all patterns by day
+         
+           nodeCount<-somTime %>% group_by(doy,codes) %>%
+            summarize(count=n(),
+                      activity=first(activityCat))
+           nodeCount$codes<-as.factor(nodeCount$codes)
+            nodeCount$codes<-factor(nodeCount$codes, levels=c("1_1","1_2","2_2","2_1","1_4","1_3","2_4","2_3","3_3","3_2","3_1","4_2","4_1","3_4","4_3","4_4"))
+           nodeCount$activity<-as.factor(nodeCount$activity)
+            nodeCount$activity<-factor(nodeCount$activity, levels=c("Widespread","Active-high","Active-low","Inactive"))
+           # add in dates
+           nodeCount$date<-as.Date(nodeCount$doy, origin = "2000-01-01")
+           
+           # ggplot(nodeCount, aes(x=doy,y=codes))+
+           #   geom_tile(aes(fill = count))+
+           #   scale_fill_gradient2(low="#c7e9b4", mid="#41b6c4", high="#225ea8", midpoint = 5,
+           #                        na.value = NA, name="count",limits=c(0, 10), oob=squish)+
+           #   theme_bw()+
+           #   ggtitle("Pattern frequency by day of year")
+           
+          p2<- ggplot(nodeCount, aes(date,codes, color=count))+
+             geom_point(shape=15, size=2)+
+             scale_color_gradient2(low="#ffeda0", mid="#fd8d3c", high="#800026", midpoint = 5,
+                                  na.value = NA,limits=c(0, 10), oob=squish,
+                                  name="Frequency (days)",
+                                  labels = c("1", "3", "5", "7",">10"),
+                                  breaks = c(1, 3, 5, 7, 10))+
+             ylab("node/pattern")+
+             xlab("day of year")+
+             theme_bw()+
+             theme(panel.grid.major.y = element_blank())+
+             ggtitle("Pattern frequency by day of year")+
+             facet_grid(activity~.,scales = "free", space = "free")+
+             theme(strip.background = element_blank(), #remove background for facet labels
+                   panel.border = element_rect(colour = "black", fill = NA), #add black border
+                   panel.spacing = unit(0, "lines"),
+                   strip.text.y.right = element_text(angle = 0),
+                   legend.position="bottom") 
+           
+           # add to activity frequency plot
+           # activity chart 
+           countDOY<-somTime %>% group_by(dummyDate) %>% count(activityCat)
+           # moving average smooth
+           countDOY<- countDOY %>%
+             group_by(activityCat) %>%
+             mutate(avg5 = zoo::rollapplyr(
+               data = n,
+               width = 10,
+               FUN = mean,
+               by.column = FALSE,
+               fill = NA, align="center"))
+           countDOY$avg5 <- ifelse(is.na(countDOY$avg5), countDOY$n, countDOY$avg5)
+           #countDOY$avg5 <- countDOY$avg5*100
+           
+           # ggplot(countDOY, aes(fill=as.factor(activityCat), y=n, x=dummyDate)) + 
+           #   #geom_bar(position="stack", stat="identity")
+           #   geom_bar(position="fill", stat="identity")+
+           #   scale_fill_brewer(type = "qual",
+           #                     palette = "Paired",
+           #                     direction = 1,
+           #                     aesthetics = "fill")+
+           #   ggtitle("Activity frequency by day through season")
+           
+           
+           p1<-ggplot(countDOY, aes(fill=as.factor(activityCat), y=avg5, x=dummyDate)) + 
+             #geom_bar(position="stack", stat="identity")
+             geom_bar(position="fill", stat="identity")+
+             scale_fill_brewer(type = "qual",
+                               palette = "Paired",
+                               direction = 1,
+                               aesthetics = "fill", name="Activity class")+
+             geom_hline(yintercept = 0.5)+
+             ggtitle("Activity frequency by day through season (10-day smooth)")+
+             ylab("Proportion of days")+
+             xlab("")+
+             theme_bw()
+           # FIGURE 3 ???
+           plot_grid(p1,p2, ncol = 1, align = "v", axis = 'lr')
+           
+          
       # closer look at 3_4 and 4_4
         temp<- somTime %>% group_by(year) %>%
             mutate(totalMeans=sum(meanPrecip))
@@ -1816,7 +2085,7 @@ somTime<-left_join(somTime,activity)
         #meanSumSeas<-merge(meanSumSeas, seasStats[,c("year","avgPrecip")],by="year")            
         temp$seasProp<-temp$meanPrecip/temp$totalMeans
         # SELECT COMPARISON YEARS
-        temp<-subset(temp, codes %in% c("3_4","4_4"))
+        temp<-subset(temp, codes %in% c("1_4","4_4"))
         nodeContrib<-temp %>% group_by(codes,year) %>%
                       summarize(avg=mean(meanPrecip),
                                 med=median(meanPrecip),
@@ -1827,13 +2096,13 @@ somTime<-left_join(somTime,activity)
         ggplot(nodeContrib, aes(year,count, fill=codes))+
           geom_bar(stat = "identity", color="grey")+  # position="dodge",
           #geom_hline(yintercept = 1/108)+
-          ggtitle("Frequency of nodes 3_4 and 4_4")+
+          ggtitle("Frequency of nodes 1_4 and 4_4")+
           facet_wrap(.~codes, nrow=2)+
           geom_quantile(quantiles = 0.5)
         ggplot(nodeContrib, aes(year,sumPrecip, fill=codes))+
           geom_bar(stat = "identity", color="grey")+  # position="dodge",
           #geom_hline(yintercept = 1/108)+
-          ggtitle("Total precip seas from nodes 3_4 and 4_4")+
+          ggtitle("Total precip seas from nodes 1_4 and 4_4")+
           facet_wrap(.~codes, nrow=2)+
           geom_quantile(quantiles = 0.5)+
           geom_smooth(method = "lm")
@@ -1879,7 +2148,7 @@ somTime<-left_join(somTime,activity)
       names(percNodeSeas)<-codeList    
       
   # Composites of seas totals in given years
-  yr<-2006
+  yr<-1984
   temp<-subLayers[[which(somTime$year==yr)]]
   comp<-stackApply(temp, somTime$mapUnit[which(somTime$year==yr)], fun=sum)
     tempNames<-as.data.frame(names(comp))
@@ -2110,7 +2379,7 @@ somTime<-left_join(somTime,activity)
   ## Show the U matrix
   Umat <- plot(som.gh500, type="dist.neighbours", main = "SOM neighbour distances")
   ## use hierarchical clustering to cluster the codebook vectors
-  som.hc <- cutree(hclust(object.distances(som.gh500, "codes")),4)
+  som.hc <- cutree(hclust(object.distances(som.gh500, "codes")),8)
   add.cluster.boundaries(som.gh500, som.hc)
   
   # map clustered nodes ----
@@ -2126,13 +2395,25 @@ somTime<-left_join(somTime,activity)
   similarities <- plot(som.gh500, type="quality", palette.name = terrain.colors)
   plot(som.gh500, type="dist.neighbours", main = "SOM neighbour distances")
   plot(som.gh500)
+  
+# distributions of codebook values
+  temp<-as.data.frame(t(som.gh500$codes[[1]]))
+  colnames(temp)<-codeList
+  temp<-gather(temp, codes, precip)
+  temp<-merge(temp, activity, by="codes")
+  ggplot(temp, aes(x=reorder(codes, precip), y=precip, fill=activityCat))+
+    geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2, outlier.shape = NA)+
+    ggtitle("Distribution of codebook precip by nodes")+
+    theme(legend.position="bottom")+
+    facet_wrap(~activityCat, scales="free_x",nrow = 1)
+  
   # sammon mapping
   library(MASS)
   gh500.codes <- som.gh500$codes
   dis <- dist(as.matrix(som.gh500$codes[[1]]))
   gh500.sam <- sammon(dis)
   plot(gh500.sam$points, type="n")
-  text(gh500.sam$points,labels=as.character(1:nrow(code_grid)))
+  text(gh500.sam$points,labels=codeList)
   ##  Polygon version of map ----
   library(sp)
     temp<-list()
@@ -2148,9 +2429,14 @@ somTime<-left_join(somTime,activity)
     }  
     sr1<-SpatialPolygons(temp)  
     plot(gh500.sam$points, type="n")
-    text(gh500.sam$points,labels=as.character(1:nrow(code_grid)))
+    #text(gh500.sam$points,labels=as.character(1:nrow(code_grid)))
+    text(gh500.sam$points,labels=codeList)
+    #text(gh500.sam$points,labels=activity$activityCat)
     plot(sr1, add=TRUE)
   # ----
+    
+    
+    
     
     
   # GGPLOT versions
@@ -2608,6 +2894,9 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
                                   paste0(round(anomCount$odds,2),"*"),
                                   paste0(round(anomCount$odds,2))) 
     
+    # remove 'normal'
+    anomCount<-subset(anomCount, anomName %in% c("wet","dry"))
+    
     # ggplot  
     ggplot(anomCount, aes(x=col, y=-row))+
       geom_tile(aes(fill=anomCt))+
@@ -2935,7 +3224,7 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
               layer(sp.polygons(aznm, col = 'black', lwd=0.5))+
               layer(sp.polygons(countries, col = 'black', lwd=0.5))+
               contourplot(compPWAT,linetype="solid", at=c(25), labels=FALSE, col='darkorange',lwd=0.75)+
-              contourplot(compPWAT,linetype="solid", at=c(50), labels=FALSE, col='darkred',lwd=0.75)+
+              contourplot(compPWAT,linetype="solid", at=c(37.5), labels=FALSE, col='darkred',lwd=0.75)+
               contourplot(compGH500,linetype="dotdash", at=seq(5700,5850,25), labels=FALSE, col='gray50',lwd=0.5)+
               contourplot(compGH500,linetype="dotted", at=c(seq(5880,6000,5)), labels=FALSE, col='gray28',lwd=0.5)
 
@@ -2992,7 +3281,7 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
           layer(sp.polygons(aznm, col = 'black', lwd=0.5))+
           layer(sp.polygons(countries, col = 'black', lwd=0.5))+
           contourplot(compPWAT,linetype="solid", at=c(25), labels=FALSE, col='darkorange',lwd=0.75)+
-          contourplot(compPWAT,linetype="solid", at=c(50), labels=FALSE, col='darkred',lwd=0.75)+
+          contourplot(compPWAT,linetype="solid", at=c(37.5), labels=FALSE, col='darkred',lwd=0.75)+
           contourplot(compGH500,linetype="dotdash", at=seq(5700,5850,25), labels=FALSE, col='gray50',lwd=0.5)+
           contourplot(compGH500,linetype="dotted", at=c(seq(5880,6000,5)), labels=FALSE, col='gray28',lwd=0.5)
         
@@ -3392,6 +3681,15 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
                   axis.ticks.x=element_blank())+
             ggtitle("Average proportion of seasonal total precip by node (PRISM)")
           
+          
+          # pie chart
+          ggplot(stationPerc, aes(x="",y=perTotal,fill=codes))+
+            geom_bar(stat='identity', width = 1)+
+            coord_polar("y", start=0)+
+            facet_wrap(~variable, nrow=2)+
+            theme_void()
+          
+          
           # percent of seas total by node
           stationTemp<-melt(somTime[,c("activityCat","Tucson","Phoenix","Flagstaff","Las Vegas","El Paso","Albuquerque")])
           #stationTotal<-stationTemp %>%  group_by(codes, variable) %>% summarise(sumPrecip=sum(value))
@@ -3410,11 +3708,35 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
                   axis.text.x=element_blank(),
                   axis.ticks.x=element_blank())+
             ggtitle("Average proportion of seasonal total precip by node (PRISM)")+
-            ylim(0,0.6)           
+            ylim(0,1)           
           
-          
+          # pie chart
+          ggplot(stationPerc, aes(x="",y=perTotal,fill=activityCat))+
+            geom_bar(stat='identity', width = 1)+
+            coord_polar("y", start=0)+
+            facet_wrap(~variable, nrow=2)+
+            theme_void()
   
-        
+          # precip rate 
+          stationPerc<- stationTemp %>%
+            group_by(variable) %>%
+            mutate(sumPrecip=sum(value, na.rm = TRUE),
+                   n=n()) %>%
+            group_by(activityCat, add=TRUE) %>%
+            summarise(perTotal=sum(value, na.rm = TRUE)/n())
+          stationPerc$variable = factor(stationPerc$variable, c("Las Vegas", "Flagstaff", "Phoenix", "Tucson", "Albuquerque", "El Paso"))
+          
+          ggplot(stationPerc, aes(variable,perTotal, fill=variable))+
+            geom_bar(stat='identity')+
+            facet_wrap(~activityCat, nrow=1)+
+            ylab("avg precip by class (mm)")+
+            theme(axis.title.x=element_blank(),
+                  axis.text.x=element_blank(),
+                  axis.ticks.x=element_blank())+
+            ggtitle("Average precipitation by activity class (PRISM)")
+          
+          
+          
 #####        
   ### sample day maps showing progression of extent and max precip
           # plot 10 random maps from selected node to assess quality
