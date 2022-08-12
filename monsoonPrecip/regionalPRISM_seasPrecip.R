@@ -63,11 +63,15 @@ seasAvgPrecip$anomName<-"normal"
 seasAvgPrecip$anomName[seasAvgPrecip$percRank<=0.33] <- "dry"
 seasAvgPrecip$anomName[seasAvgPrecip$percRank>=0.66] <- "wet"
 
-library(cowplot)   
+library(cowplot)
+library(ggplot2)
 ggplot(seasAvgPrecip, aes(year,avgPrecip, fill=as.factor(seasAvgPrecip$anomName)) )+
   geom_bar(stat = 'identity')+
   ggtitle("Regional Average Total Precip (July-Aug-Sept)")+
   geom_hline(yintercept=mean(seasAvgPrecip$avgPrecip), color="black")+
   geom_hline(yintercept=median(seasAvgPrecip$avgPrecip), color="red")+
   scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")+
-  ylab("inches")
+  ylab("inches")+
+  theme_bw()
+
+write.csv(seasAvgPrecip, file="AZNM_JAS_1900_2021.csv", row.names = FALSE)

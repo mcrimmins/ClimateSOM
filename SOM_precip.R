@@ -433,7 +433,7 @@ somTime<-left_join(somTime,activity)
   names(cbRaster)<-codeList
 
   col.titles<-paste0("",codeList," (",round((table(somTime$codes)/nrow(somTime))*100,1),"%, ",
-                     round(table(somTime$codes)/length(unique(somTime$year)),1),"dy/yr)")
+                     round(table(somTime$codes)/length(unique(somTime$year)),1),"d/yr)")
   # location of precip centroid
   #cbRaster[cbRaster ==0] <- NA
   # xyCentroid<-list()
@@ -485,16 +485,25 @@ somTime<-left_join(somTime,activity)
     colnames(ecoName)<-c("ecoregion","codes")  
       
   # activity text for maps    
-  temp<-(unique(somTime[,c("mapUnit","activityCat","codes")]))
+  # temp<-(unique(somTime[,c("mapUnit","activityCat","codes")]))
+  #     temp<-temp[order(temp[,1]),]
+  #     text2add<-as.character(temp[,2])
+  #     # color of text
+  #     textCol<-c("green","yellow","orange","red",
+  #                "yellow","yellow","orange","red",
+  #                "orange","orange","orange","red",
+  #                "red","red","red","red")
+  #     # add ecoName
+  #     text2add<-paste0(text2add<-as.character(temp[,2]),"-",ecoName$ecoregion)
+  
+  # map descriptors text
+      temp<-(unique(somTime[,c("mapUnit","activityCat","codes")]))
       temp<-temp[order(temp[,1]),]
-      text2add<-as.character(temp[,2])
-      # color of text
-      textCol<-c("green","yellow","orange","red",
-                 "yellow","yellow","orange","red",
-                 "orange","orange","orange","red",
-                 "red","red","red","red")
-      # add ecoName
-      text2add<-paste0(text2add<-as.character(temp[,2]),"-",ecoName$ecoregion)
+      textName<-c(" ","AZ","SE AZ","S AZ/NM",
+                  "SE AZ","NW NM","AZ","NW AZ",
+                  "SW NM"," SE AZ/SW NM","N AZ/NM","AZ",
+                  "NW NM", "SW NM","W NM","AZ-NM")
+      text2add<-textName
       
       
   #cbRaster[cbRaster < 0.254] <- NA  
@@ -515,14 +524,14 @@ somTime<-left_join(somTime,activity)
             main="Precip Patterns Jun 15-Sep 30 4x4 SOM - PRISM-daily 1981-2020")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))+
     layer(sp.points(stations, col="black", pch = 18, cex=0.5))+
-    contourplot(elev, at=c(1000,2000,3000), labels=FALSE, lwd = 0.3, par.settings = GrTheme)
+    contourplot(elev, at=c(2000), labels=FALSE, lwd = 0.3, par.settings = GrTheme)+
     #layer(sp.polygons(ecoreg, col="black", pch = 18, cex=0.5))+
     #layer(sp.text(c(36.0840,-115.1537),"LAS"))+
     #layer(sp.points(xyCentroid[panel.number()],
     #              pch=20, cex=1, col="black"))+
     #layer(panel.rect(-115.5,31.3,-113.0,32.0,fill=textCol[panel.number()]))+
     #layer(panel.rect(-115.5,31.3,-113.0,32.0, border=textCol[panel.number()]))+
-    #layer(panel.text(-114.25, 31.55, text2add[panel.number()],col="black",cex=0.4))
+    layer(panel.text(-114.25, 31.55, text2add[panel.number()],col="black",cex=0.6))
     #layer(panel.text(stationCodes[panel.number(1),3], stationCodes[panel.number(1),2],
     #                 stationCodes[panel.number(1),1],col="black",cex=0.4))
   
@@ -787,7 +796,7 @@ somTime<-left_join(somTime,activity)
   
   #####
   # add in climate indices
-  load("~/RProjects/SOMs/monsoonPrecip/climInd.RData")
+  load("~/RProjects/SOMs/monsoonPrecip/climInd_BSISO.RData")
   climInd<-climInd[,c("date","phase","amplitude","ONI")]
   climInd$date<-climInd$date+1 # align with PRISM doy
     colnames(climInd)[1]<-"date.c"
@@ -802,8 +811,12 @@ somTime<-left_join(somTime,activity)
   # make dummy date for plotting boxplots
   somTime$dummyDate<-as.Date(paste0("2000-",somTime$month,"-",somTime$day),format="%Y-%m-%d")
     
-    
-    
+#####   
+# PICK UP WITH PROCESSED DATA - 4/27/22
+# save.image("~/RProjects/SOMs/saved_workspace_062922.RData")
+  load("~/RProjects/SOMs/saved_workspace_062922.RData")  
+#####    
+      
   # transition probabilities
   library(gmodels)
     transProb<-cbind.data.frame(somTime[,c(1,2,4:8)], c(somTime[2:nrow(somTime),8],NA))
@@ -1094,14 +1107,14 @@ somTime<-left_join(somTime,activity)
   mapTheme <- rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
   temp<-subLayers[[idx]]
   temp[temp == 0] <- NA  
-  pRand<-levelplot(temp[[sample(which(somTime$codes=="3_1"),10)]], contour=FALSE, at=at,
+  pRand<-levelplot(temp[[sample(which(somTime$codes=="3_3"),10)]], contour=FALSE, at=at,
                      margin=FALSE, par.settings=mapTheme, 
-                     main="Precip Patterns from 3_1 - PRISM-daily 1981-2019")+
+                     main="Precip Patterns from 3_3 - PRISM-daily 1981-2020")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
   
   # plot single day
-  at<-c(seq(0,50,1),100)
-  levelplot(temp[[3420]], contour=FALSE,
+  at<-c(seq(0,30,1),100)
+  levelplot(temp[[846]], contour=FALSE,
             margin=FALSE, par.settings=mapTheme, at=at,
             main="Precip")+
     layer(sp.polygons(aznm, col = 'gray40', lwd=1))
@@ -1653,6 +1666,23 @@ somTime<-left_join(somTime,activity)
             fill = NA, align="center"))
         countDOY$avg5 <- ifelse(is.na(countDOY$avg5), countDOY$n, countDOY$avg5)
         
+        # polynomial smooth
+        countDOY<-somTime %>% group_by(dummyDate) %>% count(activityCat)
+        #countDOY<-complete(countDOY, activityCat, dummyDate)
+        
+        # moving average smooth
+        countDOY<- countDOY %>%
+          group_by(activityCat) %>%
+          mutate(smooth=as.numeric(smooth(n, kind = "3RS3R")))
+          #mutate(smooth=ksmooth(dummyDate,n, "normal",bandwidth = 1))
+          #mutate(smoothCount=KernSmooth::locpoly(x=dummyDate, y=n, bandwidth=KernSmooth::dpill(dummyDate,n,gridsize=n()), gridsize = n())$y)
+        #countDOY$avg5 <- ifelse(is.na(countDOY$avg5), countDOY$n, countDOY$avg5)
+        
+       
+        
+   
+        
+        
         ggplot(countDOY, aes(fill=as.factor(activityCat), y=n, x=dummyDate)) + 
           #geom_bar(position="stack", stat="identity")
           geom_bar(position="fill", stat="identity")+
@@ -1663,7 +1693,7 @@ somTime<-left_join(somTime,activity)
           ggtitle("Activity frequency by day through season")
         
         
-        p1<-ggplot(countDOY, aes(fill=as.factor(activityCat), y=avg5, x=dummyDate)) + 
+        p1<-ggplot(countDOY, aes(fill=as.factor(activityCat), y=n, x=dummyDate)) + 
           #geom_bar(position="stack", stat="identity")
           geom_bar(position="fill", stat="identity")+
           scale_fill_brewer(type = "qual",
@@ -1764,33 +1794,98 @@ somTime<-left_join(somTime,activity)
       
       nodeContrib <- nodeContrib %>% separate(codes, c("row","col"), sep = "_", remove=FALSE)
       nodeContrib$row<-as.numeric(nodeContrib$row); nodeContrib$col<-as.numeric(nodeContrib$col); 
-      ggplot(nodeContrib, aes(x=col,y=-row))+
+      p2<-ggplot(nodeContrib, aes(x=col,y=-row))+
         geom_tile(aes(fill = avgAnn*100), size=1.5)+
         #geom_text(aes(label = codes), size=6)+
         #geom_text(aes(label = n), size=6)+
-        geom_text(aes(label = paste0(round(avgAnn*100,1)," (",round(avgCt,1),")")), size=6)+
-        scale_fill_gradient(low = "#ffffb2", high = "#b10026", na.value = NA, name="% contribution")+
+        #geom_text(aes(label = paste0(round(avgAnn*100,1)," (",round(avgCt,1),")")), size=6)+
+        geom_text(aes(label = paste0(round(avgAnn*100,1))), size=6)+
+        scale_fill_gradient(low = "#f7fcf5", high = "#006d2c", na.value = NA, name="%")+
         #scale_fill_gradient2(low = "blue",mid="grey", midpoint = 6.25,
         #                     high = "red", na.value = NA, name="% contribution")+
-        ggtitle("Avg % contrib to seasonal total precip (based on avg rate*avg days)")+
+        ggtitle("  Avg total % contrib to seasonal precip")+
         #ggtitle("Median daily % contrib to seasonal total precip")+
         theme_bw()+
-        theme(axis.text.x=element_blank(),
-              axis.text.y=element_blank())
+        scale_y_continuous(breaks=c(-1,-2,-3,-4),
+                           labels=c("1", "2", "3","4"))+
+        theme(axis.title.x=element_blank(),
+              axis.title.y=element_blank())+
+        theme(legend.position="bottom")
       
-      ggplot(nodeContrib, aes(x=col,y=-row))+
+      p1<-ggplot(nodeContrib, aes(x=col,y=-row))+
         geom_tile(aes(fill = avg*100), size=1.5)+
         #geom_text(aes(label = codes), size=6)+
         #geom_text(aes(label = n), size=6)+
-        geom_text(aes(label = paste0(round(avg*100,1)," (",round(avgCt,1),")")), size=6)+
-        scale_fill_gradient(low = "#ffffb2", high = "#b10026", na.value = NA, name="% contribution")+
+        #geom_text(aes(label = paste0(round(avg*100,1)," (",round(avgCt,1),")")), size=6)+
+        geom_text(aes(label = paste0(round(avg*100,1))), size=6)+
+        scale_fill_gradient(low = "#f7fbff", high = "#2171b5", na.value = NA, name="%")+
         #scale_fill_gradient2(low = "blue",mid="grey", midpoint = 6.25,
         #                     high = "red", na.value = NA, name="% contribution")+
-        ggtitle("Avg daily % contrib to seasonal total precip")+
+        ggtitle("  Avg daily % contrib to seasonal total precip")+
         #ggtitle("Median daily % contrib to seasonal total precip")+
         theme_bw()+
-        theme(axis.text.x=element_blank(),
-              axis.text.y=element_blank())
+        scale_y_continuous(breaks=c(-1,-2,-3,-4),
+                         labels=c("1", "2", "3","4"))+
+        theme(axis.title.x=element_blank(),
+              axis.title.y=element_blank())+
+        theme(legend.position="bottom")
+      #plot_grid(p1,p2, ncol = 2, align = "h", labels=c("(a)","(b)"))
+      
+      # add in activity lines
+      #gb <- ggplot_build(p1) 
+      p1<- p1 + geom_segment(
+                        aes(x=0.5, xend=1.5, y=-1.5, yend=-1.5), 
+                        color="black")+
+           geom_segment(
+                        aes(x=1.5, xend=1.5, y=-0.5, yend=-1.5), 
+                        color="black")+
+           geom_segment( 
+                     aes(x=2.5, xend=2.5, y=-2.5, yend=-0.5), 
+                     color="black")+
+           geom_segment( 
+                     aes(x=0.5, xend=2.5, y=-2.5, yend=-2.5), 
+                     color="black")+
+           geom_segment( 
+                     aes(x=2.5, xend=2.5, y=-3.5, yend=-4.5), 
+                     color="black")+
+           geom_segment( 
+                     aes(x=3.5, xend=3.5, y=-2.5, yend=-3.5), 
+                     color="black")+
+           geom_segment( 
+                     aes(x=2.5, xend=3.5, y=-3.5, yend=-3.5), 
+                     color="black")+
+           geom_segment( 
+                     aes(x=3.5, xend=4.5, y=-2.5, yend=-2.5), 
+                     color="black")
+ 
+      p2<- p2 + geom_segment(
+              aes(x=0.5, xend=1.5, y=-1.5, yend=-1.5), 
+              color="black")+
+              geom_segment(
+                aes(x=1.5, xend=1.5, y=-0.5, yend=-1.5), 
+                color="black")+
+              geom_segment( 
+                aes(x=2.5, xend=2.5, y=-2.5, yend=-0.5), 
+                color="black")+
+              geom_segment( 
+                aes(x=0.5, xend=2.5, y=-2.5, yend=-2.5), 
+                color="black")+
+              geom_segment( 
+                aes(x=2.5, xend=2.5, y=-3.5, yend=-4.5), 
+                color="black")+
+              geom_segment( 
+                aes(x=3.5, xend=3.5, y=-2.5, yend=-3.5), 
+                color="black")+
+              geom_segment( 
+                aes(x=2.5, xend=3.5, y=-3.5, yend=-3.5), 
+                color="black")+
+              geom_segment( 
+                aes(x=3.5, xend=4.5, y=-2.5, yend=-2.5), 
+                color="black")           
+      ## FIGURE 4??
+      plot_grid(p1,p2, ncol = 2, align = "h", labels=c("(a)","(b)"))  
+      
+      
       
       # seasonal contribution
       nodeContrib<-temp %>% group_by(codes,year) %>%
@@ -1988,7 +2083,7 @@ somTime<-left_join(somTime,activity)
                   axis.text.y=element_blank())
       
       # heat map of node occurrence for select year
-          temp<-subset(somTime, year==1984)
+          temp<-subset(somTime, year==2020)
           temp$codes<-as.factor(temp$codes)
           temp$codes<-factor(temp$codes, levels=c("1_1","1_2","2_2","2_1","1_4","1_3","2_4","2_3","3_3","3_2","3_1","4_2","4_1","3_4","4_3","4_4"))
           
@@ -2010,6 +2105,7 @@ somTime<-left_join(somTime,activity)
             nodeCount$activity<-factor(nodeCount$activity, levels=c("Widespread","Active-high","Active-low","Inactive"))
            # add in dates
            nodeCount$date<-as.Date(nodeCount$doy, origin = "2000-01-01")
+           nodeCount$prop<-(nodeCount$count/40)*100
            
            # ggplot(nodeCount, aes(x=doy,y=codes))+
            #   geom_tile(aes(fill = count))+
@@ -2018,13 +2114,13 @@ somTime<-left_join(somTime,activity)
            #   theme_bw()+
            #   ggtitle("Pattern frequency by day of year")
            
-          p2<- ggplot(nodeCount, aes(date,codes, color=count))+
+          p2<- ggplot(nodeCount, aes(date,codes, color=prop))+
              geom_point(shape=15, size=2)+
-             scale_color_gradient2(low="#ffeda0", mid="#fd8d3c", high="#800026", midpoint = 5,
-                                  na.value = NA,limits=c(0, 10), oob=squish,
-                                  name="Frequency (days)",
-                                  labels = c("1", "3", "5", "7",">10"),
-                                  breaks = c(1, 3, 5, 7, 10))+
+             scale_color_gradient2(low="#ffeda0", mid="#fd8d3c", high="#800026", midpoint = 12.5,
+                                  na.value = NA,limits=c(2.5, 25), oob=squish,
+                                  name="Frequency (% of days)",
+                                  labels = c("5", "10", "15", "20",">25"),
+                                  breaks = c(5,10,15,20,25))+
              ylab("node/pattern")+
              xlab("day of year")+
              theme_bw()+
@@ -2062,15 +2158,15 @@ somTime<-left_join(somTime,activity)
            #   ggtitle("Activity frequency by day through season")
            
            
-           p1<-ggplot(countDOY, aes(fill=as.factor(activityCat), y=avg5, x=dummyDate)) + 
+           p1<-ggplot(countDOY, aes(fill=as.factor(activityCat), y=n, x=dummyDate)) + 
              #geom_bar(position="stack", stat="identity")
-             geom_bar(position="fill", stat="identity")+
+             geom_bar(position="fill", stat="identity", width=1.1)+
              scale_fill_brewer(type = "qual",
                                palette = "Paired",
                                direction = 1,
                                aesthetics = "fill", name="Activity class")+
              geom_hline(yintercept = 0.5)+
-             ggtitle("Activity frequency by day through season (10-day smooth)")+
+             ggtitle("Activity frequency by day through season")+
              ylab("Proportion of days")+
              xlab("")+
              theme_bw()
@@ -2169,10 +2265,13 @@ somTime<-left_join(somTime,activity)
       tempCode<-cbind.data.frame(tempCode,as.data.frame(round(table(somTime$codes)/length(unique(somTime$year)),1)))
         colnames(tempCode)[5]<-"avg"
       tempCode$anom<-round(tempCode$Freq-tempCode$avg,1)
-      col.titles<-paste0("",tempCode$codes,", ",tempCode$Freq," (",tempCode$anom,")")  
+      #col.titles<-paste0("",tempCode$codes,", ",tempCode$Freq," (",tempCode$anom,")")  
+      col.titles<-paste0(tempCode$Freq," (",tempCode$anom,")")  
     
     # plot composite total 
-    at<-c(seq(0,100,5),250)
+    #at<-c(seq(0,100,5),250)
+    at<-c(seq(0,250,5))
+    
     mapTheme<-rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
     pComp<-levelplot(comp, contour=FALSE, margin=FALSE, par.settings=mapTheme,layout=c(ncols,nrows), at=at, names.attr=col.titles, 
                      main=paste0("Composite Precipitation ",yr), xlab=NULL, ylab=NULL)+
@@ -2402,10 +2501,11 @@ somTime<-left_join(somTime,activity)
   temp<-gather(temp, codes, precip)
   temp<-merge(temp, activity, by="codes")
   ggplot(temp, aes(x=reorder(codes, precip), y=precip, fill=activityCat))+
-    geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2, outlier.shape = NA)+
-    ggtitle("Distribution of codebook precip by nodes")+
+    geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2)+
+    ggtitle("Distribution of precipitation values in each node")+
     theme(legend.position="bottom")+
-    facet_wrap(~activityCat, scales="free_x",nrow = 1)
+    facet_wrap(~activityCat, scales="free_x",nrow = 1)+
+    theme_bw()
   
   # sammon mapping
   library(MASS)
@@ -2566,6 +2666,20 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
     ylab("mm")+
     ggtitle("Distribution of Codebook Vectors (precip in mm)")
   
+  temp<-merge(codebook.long, activity, by="codes")
+  temp<-temp %>% 
+    group_by(codes, activityCat) %>%
+    summarize(n_thresh = sum(value>10),
+              n_cells = n(),
+              perc_cov=(n_thresh/n_cells)*100)
+  ggplot(temp, aes(x=reorder(codes, perc_cov), y=perc_cov, fill=activityCat))+
+    #geom_boxplot(varwidth = FALSE, position = "dodge2", outlier.alpha = 0.2)+
+    geom_bar(stat="identity")+
+    ggtitle("percent coverage of codebook values >10mm in each node")+
+    theme(legend.position="bottom")+
+    facet_wrap(~activityCat, scales="free_x",nrow = 1)+
+    theme_bw()
+  
   # SOM node counts by year - facet wrap indiv heat maps
   countsYr<-somTime %>% group_by(codes,year) %>% count(codes)
   countsYr <- countsYr %>% separate(codes, c("row","col"), sep = "_", remove=FALSE)
@@ -2682,7 +2796,7 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
     facet_wrap(~phase, ncol = 4)+
     scale_fill_gradient2(low = "lightblue",mid="white", midpoint = 0,
                          high = "red", na.value = NA, name="count")+
-    ggtitle("Anom of expected days in each node by MJO (amp>1, *pval<0.05) Phase")+
+    ggtitle("Anom of expected days in each node by BSISO (amp>1, *pval<0.05) Phase")+
     theme_bw()+
     theme(axis.text.x=element_blank(),
           axis.text.y=element_blank())
@@ -3220,13 +3334,24 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
       #   mapTheme<-rasterTheme(region=brewer.pal(8,"BrBG")) 
        mapTheme <- rasterTheme(region = c("lightblue", "blue","green","green4","yellow","red", "red4"))
        pComp<-levelplot(compPRCP, contour=FALSE, margin=FALSE,layout=c(ncols,nrows), at=at,
+                        xlim=c(-130,-90), ylim=c(20,42.5),
                       main="NARR GH500/Precip Composite Patterns Jun 15th-Sep 30th 4x4 SOM (1981-2020)", par.settings=mapTheme)+
-              layer(sp.polygons(aznm, col = 'black', lwd=0.5))+
-              layer(sp.polygons(countries, col = 'black', lwd=0.5))+
-              contourplot(compPWAT,linetype="solid", at=c(25), labels=FALSE, col='darkorange',lwd=0.75)+
-              contourplot(compPWAT,linetype="solid", at=c(37.5), labels=FALSE, col='darkred',lwd=0.75)+
-              contourplot(compGH500,linetype="dotdash", at=seq(5700,5850,25), labels=FALSE, col='gray50',lwd=0.5)+
-              contourplot(compGH500,linetype="dotted", at=c(seq(5880,6000,5)), labels=FALSE, col='gray28',lwd=0.5)
+              #layer(sp.polygons(aznm, col = 'gray50', lwd=0.5))+
+              #layer(sp.polygons(states, col = 'gray50', lwd=0.5, fill='grey90'))+
+              layer(sp.polygons(countries, col = 'gray50', lwd=0.5, fill='grey90'))+
+             
+         
+         levelplot(compPRCP, contour=FALSE, margin=FALSE,layout=c(ncols,nrows), at=at,
+                   xlim=c(-130,-90), ylim=c(20,42.5),
+                   main="NARR GH500/Precip Composite Patterns Jun 15th-Sep 30th 4x4 SOM (1981-2020)", par.settings=mapTheme)+
+         
+         layer(sp.polygons(states, col = 'gray50', lwd=0.5))+
+         
+              contourplot(compPWAT,linetype="solid", at=c(31.75), labels=FALSE, col='darkorange',lwd=0.75)+
+              #contourplot(compPWAT,linetype="solid", at=c(30), labels=FALSE, col='darkred',lwd=0.75)+
+              #contourplot(compGH500,linetype="dotdash", at=seq(5700,5850,25), labels=FALSE, col='gray50',lwd=0.5)+
+              #contourplot(compGH500,linetype="dotted", at=c(seq(5880,6000,5)), labels=FALSE, col='gray28',lwd=0.5)
+              contourplot(compGH500,linetype="dotdash", at=seq(5700,6000,10), labels=FALSE, col='black',lwd=0.5)
 
         png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/SOM4x4_composites.png", width = 11, height = 8.5, units = "in", res = 300L)
         #grid.newpage()
@@ -3278,12 +3403,20 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
         mapTheme <- rasterTheme(region = c("lightblue", "blue","green","green4","yellow","red", "red4"))
         pComp<-levelplot(compPRCP, contour=FALSE, margin=FALSE,layout=c(4,1), at=at,
                          main="NARR GH500/Precip Composite Patterns June 15th-Sep 30th Activity Cat (1981-2020)", par.settings=mapTheme)+
-          layer(sp.polygons(aznm, col = 'black', lwd=0.5))+
-          layer(sp.polygons(countries, col = 'black', lwd=0.5))+
-          contourplot(compPWAT,linetype="solid", at=c(25), labels=FALSE, col='darkorange',lwd=0.75)+
-          contourplot(compPWAT,linetype="solid", at=c(37.5), labels=FALSE, col='darkred',lwd=0.75)+
-          contourplot(compGH500,linetype="dotdash", at=seq(5700,5850,25), labels=FALSE, col='gray50',lwd=0.5)+
-          contourplot(compGH500,linetype="dotted", at=c(seq(5880,6000,5)), labels=FALSE, col='gray28',lwd=0.5)
+          #layer(sp.polygons(aznm, col = 'black', lwd=0.5))+
+          layer(sp.polygons(countries, col = 'grey90', lwd=0.5))+
+          levelplot(compPRCP, contour=FALSE, margin=FALSE,layout=c(4,1), at=at,
+                    main="NARR GH500/Precip Composite Patterns June 15th-Sep 30th Activity Cat (1981-2020)", par.settings=mapTheme)+
+          
+          layer(sp.polygons(states, col = 'gray50', lwd=0.5))+
+          
+          contourplot(compPWAT,linetype="solid", at=c(31.75), labels=FALSE, col='darkorange',lwd=0.75)+
+          #contourplot(compPWAT,linetype="solid", at=c(30), labels=FALSE, col='darkred',lwd=0.75)+
+          #contourplot(compGH500,linetype="dotdash", at=seq(5700,5850,25), labels=FALSE, col='gray50',lwd=0.5)+
+          #contourplot(compGH500,linetype="dotted", at=c(seq(5880,6000,5)), labels=FALSE, col='gray28',lwd=0.5)
+          contourplot(compGH500,linetype="dotdash", at=seq(5700,6000,12.5), labels=FALSE, col='black',lwd=0.5)
+        
+        
         
         png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/SOM4x4_activity_composites.png", width = 11, height = 4, units = "in", res = 300L)
         #grid.newpage()
@@ -3742,19 +3875,19 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
           # plot 10 random maps from selected node to assess quality
           at<-c(seq(0.01,50,1),105)
           mapTheme <- rasterTheme(region = c("lightblue", "blue", "green","yellow","red"))
-          temp<-subLayers[[which(somTime$date>=as.Date("1998-07-01") & somTime$date<=as.Date("1998-07-06"))]]
+          temp<-subLayers[[which(somTime$date>=as.Date("1986-09-22") & somTime$date<=as.Date("1986-09-30"))]]
           temp[temp == 0] <- NA  
           pExamp<-levelplot(temp, contour=FALSE, 
                            margin=FALSE, par.settings=mapTheme, at=at,
                            main="Sample days - PRISM-daily 1981-2019")+
             layer(sp.polygons(aznm, col = 'gray40', lwd=1))
-          somTime[which(somTime$date>=as.Date("1998-07-01") & somTime$date<=as.Date("1998-07-06")),c("date","codes","percExtent","percExtent10","maxPrecip")]
+          somTime[which(somTime$date>=as.Date("1983-09-25") & somTime$date<=as.Date("1983-09-30")),c("date","codes","percExtent","percExtent10","maxPrecip","activityCat")]
         
 #####        
         
   
 ##### Predict classification of new events - use getDailyPRISMppt.R
-  newPrcp<-stack("~/RProjects/SOMs/monsoonPrecip/SWUS_061521_093021_PRISM_daily_prcp.grd")
+  newPrcp<-stack("~/RProjects/SOMs/monsoonPrecip/SWUS_061522_071722_PRISM_daily_prcp.grd")
   # crop to region
   e <- extent(-115.5,-106,31.3, 37.5) 
   newPrcp <-crop(newPrcp,e)
@@ -3796,7 +3929,7 @@ spear<-somTime %>% group_by(codes) %>% summarise(spearR = mean(spearman, na.rm=T
            panel.border = element_rect(colour = "black", fill=NA, size=1)) +
      scale_fill_manual(values = c("lightblue", "palegreen", "yellow","violet"))+
      facet_wrap(~month, nrow = 4, ncol = 1, scales = "free") +
-     labs(title = "SOM precip classifications - Monsoon 2021")
+     labs(title = "SOM precip classifications - Monsoon 2022")
    # mean regional precip stats
    predictedUnits <- predictedUnits[order(as.Date(predictedUnits$date, format="%Y-%m-%d")),]
    
