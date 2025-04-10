@@ -1,5 +1,6 @@
 # get station data for SOM analysis
 # MAC 10/8/20
+# 
 
 library(RCurl)
 library(jsonlite)
