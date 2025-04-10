@@ -1,5 +1,5 @@
-# grab monthly PRISM precip from RCC-ACIS, plot monsoon precip
-# MAC 11/15/21
+# get stack of monthly PRISM from RCC ACIS, create raster stack
+# MAC 9/8/22
 
 # get monthly PRISM from RCC ACIS
 library(RCurl)
@@ -7,17 +7,14 @@ library(jsonlite)
 library(raster)    
 # create current date
 dateRangeStart="1900-01-01"
-dateRangeEnd= "2023-12-31"
-
-# custom functions
-perc.rank<-function(x) trunc(rank(x,ties.method = "average"))/length(x)
+dateRangeEnd= "2021-12-31"
 
 # generate dates -- keep with PRISM date
 allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),by="month")
 
 # Set bounding box for PRISM extract
 # AZ/NM bbox -115.004883,31.184609,-102.524414,37.387617
-ACISbbox<-"-115.5,31.3,-106,37.5" 
+ACISbbox<- "-113.005371,34.642247,-111.132202,36.897194"
 
 # ACIS query in JSON
 jsonQuery=paste0('{"bbox":"',ACISbbox,'","sdate":"',dateRangeStart,'","edate":"',dateRangeEnd,'","grid":"21","elems":"mly_pcpn","meta":"ll,elev","output":"json"}') # or uid
@@ -42,38 +39,28 @@ gridStack<-setExtent(gridStack, gridExtent, keepres=FALSE, snap=FALSE)
 names(gridStack)<-allDates
 # set 0 and neg to NA
 gridStack[gridStack < 0] <- NA
+
 ## manage dates
 allDates<-as.data.frame(allDates)
 allDates$month<-as.numeric(format(allDates$allDates, "%m"))
 allDates$year<-as.numeric(format(allDates$allDates, "%Y"))
 
-##### get seasonal precip
-# set months for monsoon season
-idx<-which(allDates$month %in% c(7,8,9)) # grab only summer months
-#idx<-which(allDates$month %in% c(7)) # grab only summer months
-allDates<-allDates[idx,]
-gridStack<-gridStack[[idx]]
+# look at some data
+plot(gridStack)
 
-# calculate seasonal totals
-sumSeas<-stackApply(gridStack, allDates$year, fun = sum)
-seasAvgPrecip<-cellStats(sumSeas, 'mean')
-seasAvgPrecip<-cbind.data.frame(unique(allDates$year),seasAvgPrecip)
-seasAvgPrecip$percRank<-perc.rank(seasAvgPrecip$seasAvgPrecip) 
-colnames(seasAvgPrecip)<-c("year","avgPrecip","percRank")
-# names for terciles
-seasAvgPrecip$anomName<-"normal"
-seasAvgPrecip$anomName[seasAvgPrecip$percRank<=0.33] <- "dry"
-seasAvgPrecip$anomName[seasAvgPrecip$percRank>=0.66] <- "wet"
+# calc SPI on stack using SPEI package
+library(SPEI)
+# set rasteroptions
+rasterOptions(progress = 'text')
 
-library(cowplot)
-library(ggplot2)
-ggplot(seasAvgPrecip, aes(year,avgPrecip, fill=as.factor(seasAvgPrecip$anomName)) )+
-  geom_bar(stat = 'identity')+
-  ggtitle("Regional Average Total Precip (July-Aug-Sept)")+
-  geom_hline(yintercept=mean(seasAvgPrecip$avgPrecip), color="black")+
-  geom_hline(yintercept=median(seasAvgPrecip$avgPrecip), color="red")+
-  scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")+
-  ylab("inches")+
-  theme_bw()
+# Declare the function to use
+funSPI <- function(x, scale=2, na.rm=TRUE,...) as.numeric((spi(x, scale=scale, na.rm=na.rm, ...))$fitted)
 
-write.csv(seasAvgPrecip, file="AZNM_JAS_1900_2021.csv", row.names = FALSE)
+rstSPI <- calc(gridStack, fun = funSPI)
+
+
+#####
+
+
+
+

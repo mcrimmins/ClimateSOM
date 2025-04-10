@@ -814,7 +814,7 @@ somTime<-left_join(somTime,activity)
 #####   
 # PICK UP WITH PROCESSED DATA - 4/27/22
 # save.image("~/RProjects/SOMs/saved_workspace_062922.RData")
-  load("~/RProjects/SOMs/saved_workspace_062922.RData")  
+#  load("~/RProjects/SOMs/saved_workspace_062922.RData")  
 #####    
       
   # transition probabilities

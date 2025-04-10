@@ -8,16 +8,17 @@ library(kohonen)
 library(tidyr)
 library(ggplot2)
 library(lubridate)
-
+library(magick)
 
 #####
 # get recent PRISM data -- plotMonsoonPRISM.R
 # auto date range...start with 6-15 and run on 6-17 to get two days of data, end on 10/1
 dateRangeStart="2022-06-15"
-dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
-if(dateRangeEnd<"2022-06-16" | dateRangeEnd>="2022-10-01"){
-  stop()
-}
+dateRangeEnd="2022-09-30"
+# dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
+# if(dateRangeEnd<"2022-06-16" | dateRangeEnd>="2022-10-01"){
+#   stop()
+# }
 
 # generate dates -- keep with PRISM date
 allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),1)
@@ -105,13 +106,15 @@ predictedUnits$date<-as.Date(predictedUnits$date, format="X%Y.%m.%d")
 predictedUnits$wday<-lubridate::wday(predictedUnits$date, label = T, week_start = 7)
 predictedUnits$week<-lubridate::epiweek(predictedUnits$date)
 predictedUnits$month<-format(predictedUnits$date,"%m")
-predictedUnits$label1<-paste0(predictedUnits$codes,"\n",predictedUnits$date)
-predictedUnits$label2<-paste0(predictedUnits$codes,"-",predictedUnits$activityCat,"\n",format(predictedUnits$date, "%m-%d"))
+predictedUnits$label1<-paste0(format(predictedUnits$date, "%d"),"\n",predictedUnits$codes)
+predictedUnits$label2<-paste0(predictedUnits$codes,"-",predictedUnits$activityCat,"(",format(predictedUnits$date, "%m-%d"),")")
+predictedUnits$moLab<-factor(month.name[as.numeric(predictedUnits$month)], levels=c("June","July","August","September"))
+  #levels(predictedUnits$moLab)<-c("June","July","August","September")
 # mean regional precip stats
 predictedUnits <- predictedUnits[order(as.Date(predictedUnits$date, format="%Y-%m-%d")),]
 
 # plot calendar
-predictedUnits %>%
+p<-predictedUnits %>%
   ggplot(aes(wday,-week, fill = activityCat)) +
   geom_tile(colour = "white")  + 
   geom_text(aes(label = label1), size = 3) +
@@ -124,10 +127,19 @@ predictedUnits %>%
         panel.background = element_blank(),
         strip.background = element_blank(),
         strip.text = element_text(face = "bold", size = 15),
-        panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_fill_manual(values = c("lightblue", "palegreen", "yellow","violet"))+
-  facet_wrap(~month, nrow = 4, ncol = 1, scales = "free") +
-  labs(title = "SOM precip classifications - Monsoon 2022")
+        panel.border = element_rect(colour = "black", fill=NA, size=1),
+        plot.title = element_text(size=18)) +
+  scale_fill_manual(values = c("lightblue", "palegreen", "yellow","violet"),name="Activity Class")+
+  facet_wrap(~moLab, nrow = 4, ncol = 1, scales = "free") +
+  #labs(title = paste0("Precipitation Activity Classifications \n Monsoon ",format(as.Date(dateRangeStart,"%Y-%m-%d"),"%Y")))+
+  ggtitle(paste0("Precipitation Activity Classifications \nMonsoon ",format(as.Date(dateRangeStart,"%Y-%m-%d"),"%Y")))
+
+# write out file
+png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/MonsoonSOM_Calendar.png",width = 8.5, height = 11, units = "in", res = 300L)
+#grid.newpage()
+print(p, newpage = FALSE)
+dev.off()
+
 
 # stats
 #predictedUnits$meanPrecip<-apply(new.df.wide[,2:ncol(new.df.wide)], 1, mean, na.rm=TRUE)# mean regional precip
@@ -163,7 +175,7 @@ p<-gplot(newPrcpIn) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="burlywood4", 
   #                     name="inches", limits=c(0,20),oob=squish)+
-  facet_wrap(~ variable) +
+  facet_wrap(~ variable, labeller = labeller(variable = label_wrap_gen(width = 10))) +
   #sugrrants::facet_calendar(~ variable, nrow = 2)+
   scale_fill_gradientn(colours = precipCols, na.value="burlywood4", 
                        name="inches", limits=c(0,6),oob=scales::squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
@@ -189,11 +201,12 @@ p<-p +  geom_polygon( data=states, aes(x=X, y=Y, group = PID),colour="grey", fil
         axis.ticks.y=element_blank(),
         axis.title.x=element_blank(),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        strip.text.x = element_text(size = 10))
 
 # write out file
 library(magick)
-png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/Monsoon2022_SOMs.png",width = 16, height = 10, units = "in", res = 300L)
+png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/Monsoon2022_SOMs.png",width = 16, height = 16, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
@@ -204,11 +217,11 @@ plot <- image_read("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/Monsoon2022
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
 logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
-logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
+logo <- image_resize(logo_raw, geometry_size_percent(width=150,height = 150))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+410+2760")
+final_plot <- image_composite(plot, logo, offset = "+90+4500")
 # And overwrite the plot without a logo
 image_write(final_plot,"/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/Monsoon2022_SOMs.png")
 # END PLOT ALL DAYS THUMBNAILS ----
