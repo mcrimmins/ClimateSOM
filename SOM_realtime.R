@@ -13,8 +13,8 @@ library(magick)
 #####
 # get recent PRISM data -- plotMonsoonPRISM.R
 # auto date range...start with 6-15 and run on 6-17 to get two days of data, end on 10/1
-dateRangeStart="2022-06-15"
-dateRangeEnd="2022-09-30"
+dateRangeStart="2026-06-15"
+dateRangeEnd="2026-09-30"
 # dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
 # if(dateRangeEnd<"2022-06-16" | dateRangeEnd>="2022-10-01"){
 #   stop()
@@ -56,8 +56,8 @@ gridStack<-gridStack*25.4
 #####
 
 # load SOM mapping from SOM_precip.R
-load("~/RProjects/SOMs/monsoonPrecip/AZwNM_PRISM_JJAS_SOM4x4_15K_CP2_1981_2020.RData") #1- rad(4,1):rlen:5000, #2-rad(3,0.33):rlen:7000
-mask<-raster( "~/RProjects/SOMs/monsoonPrecip/SWUS_PRISM_MASK.grd")
+load("~/RProjects/ClimateSOM/monsoonPrecip/AZwNM_PRISM_JJAS_SOM4x4_15K_CP2_1981_2020.RData") #1- rad(4,1):rlen:5000, #2-rad(3,0.33):rlen:7000
+mask<-raster( "~/RProjects/ClimateSOM/monsoonPrecip/SWUS_PRISM_MASK.grd")
 
 ##### Predict classification of new events - use getDailyPRISMppt.R
 #newPrcp<-stack("~/RProjects/SOMs/monsoonPrecip/SWUS_061522_071722_PRISM_daily_prcp.grd")
@@ -135,7 +135,7 @@ p<-predictedUnits %>%
   ggtitle(paste0("Precipitation Activity Classifications \nMonsoon ",format(as.Date(dateRangeStart,"%Y-%m-%d"),"%Y")))
 
 # write out file
-png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/MonsoonSOM_Calendar.png",width = 8.5, height = 11, units = "in", res = 300L)
+png("/home/crimmins/RProjects/ClimateSOM/figs/MonsoonSOM_Calendar.png",width = 8.5, height = 11, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
@@ -206,7 +206,7 @@ p<-p +  geom_polygon( data=states, aes(x=X, y=Y, group = PID),colour="grey", fil
 
 # write out file
 library(magick)
-png("/home/crimmins/RProjects/SOMs/monsoonPrecip/figs/Monsoon2022_SOMs.png",width = 16, height = 16, units = "in", res = 300L)
+png("/home/crimmins/RProjects/ClimateSOM/figs/Monsoon2022_SOMs.png",width = 16, height = 16, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()

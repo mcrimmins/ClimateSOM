@@ -7,7 +7,7 @@ library(jsonlite)
 library(raster)    
 # create current date
 dateRangeStart="1900-01-01"
-dateRangeEnd= "2023-12-31"
+dateRangeEnd= "2025-12-31"
 
 # custom functions
 perc.rank<-function(x) trunc(rank(x,ties.method = "average"))/length(x)
@@ -73,6 +73,10 @@ ggplot(seasAvgPrecip, aes(year,avgPrecip, fill=as.factor(seasAvgPrecip$anomName)
   geom_hline(yintercept=mean(seasAvgPrecip$avgPrecip), color="black")+
   geom_hline(yintercept=median(seasAvgPrecip$avgPrecip), color="red")+
   scale_fill_manual(values = c("saddlebrown", "grey", "forestgreen"), name="tercile")+
+  scale_x_continuous(breaks = seq(
+    from = floor(min(seasAvgPrecip$year) / 10) * 10, 
+    to = 2020, 
+    by = 10)) +
   ylab("inches")+
   theme_bw()
 

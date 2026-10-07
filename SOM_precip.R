@@ -60,13 +60,18 @@ stationCodes<-cbind.data.frame(c("TUS","PHX","FLG","LAS","ELP","ABQ"),
                                c(-110.9552,-112.0038,-111.6663,-115.1634,-106.3758,-106.6155))
 
 
-# load PRISM for SW Region - from dailyDownloadPRISM.R
+# load PRISM for SW Region - from PRISM_utils/dailyDownloadPRISM.R
 # prcp<- stack("/scratch/crimmins/PRISM/processed/SWUS_1981_2019_PRISM_daily_prcp.grd") 
- prcp<- stack("/scratch/crimmins/PRISM/processed/SWUS_1981_2020_PRISM_daily_prcp.grd") 
+# prcp<- stack("/scratch/crimmins/PRISM/processed/SWUS_1981_2020_PRISM_daily_prcp.grd") 
 # PRISM percentiles from monsoonPRISM_misc.R
 # prcp<-stack("/scratch/crimmins/PRISM/processed/JASperRank_SWUS_1981_2019_PRISM_daily_prcp.grd") 
+
+##### use this script to update with new PRISM daily precip stack
+# ~/RProjects/ClimateSOM/downloadDailyPRISM_monsoon.R
+prcp<-stack("~/RProjects/ClimateSOM/PRISMtest.grd") 
+ 
 # load PRISM mask from monsoonPRISM_misc.R
-mask<-raster( "~/RProjects/SOMs/monsoonPrecip/SWUS_PRISM_MASK.grd")
+mask<-raster( "~/RProjects/ClimateSOM/monsoonPrecip/SWUS_PRISM_MASK.grd")
 
 
 # load CPC daily precip from ~/SWMonsoonTracker/NCEPGrids/createNCEPgrids.R
